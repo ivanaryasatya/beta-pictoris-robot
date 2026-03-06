@@ -28,6 +28,7 @@ struct MotorPins {
     const byte in1;
     const byte in2;
 };
+
 MotorPins motors[4] = {
 //   en, in1, in2
     {32, 33, 25}, // Motor1 - front right

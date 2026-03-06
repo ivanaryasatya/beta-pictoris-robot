@@ -9,20 +9,24 @@ static bool ledBlinkEnabled = false;
 static bool ledBlinkInitialized = false;
 
 void start() {
-  if (!ledBlinkInitialized) {
+  if (!ledBlinkInitialized)
+  {
     pinMode(builtinLedPin, OUTPUT);
     ledBlinkInitialized = true;
   }
   ledBlinkEnabled = true;
 }
 
-void run() {
+void run()
+{
 
-  if (!ledBlinkEnabled) return;
+  if (!ledBlinkEnabled)
+    return;
 
   static unsigned long currentMillisLedBlink = millis();
 
-  if (currentMillisLedBlink - previousMillisLedBlink >= ledBlinkInterval) {
+  if (currentMillisLedBlink - previousMillisLedBlink >= ledBlinkInterval)
+  {
     previousMillisLedBlink = currentMillisLedBlink;
 
     ledBlinkLedState = !ledBlinkLedState;
@@ -30,7 +34,8 @@ void run() {
   }
 }
 
-void stop() {
+void stop()
+{
   ledBlinkEnabled = false;
   ledBlinkLedState = LOW;
   digitalWrite(builtinLedPin, LOW);

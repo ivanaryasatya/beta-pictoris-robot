@@ -103,10 +103,10 @@
 #include "secretData.h"
 #include "serialOutput.h"
 
-const String Web_API_KEY  = secretData.getWebApiKey();
-const String DATABASE_URL = secretData.getDatabaseUrl();
-const String USER_EMAIL   = secretData.getUserEmail();
-const String USER_PASS    = secretData.getUserPass();
+const String Web_API_KEY  = secretData.Web_API_KEY;
+const String DATABASE_URL = secretData.DATABASE_URL;
+const String USER_EMAIL   = secretData.USER_EMAIL;
+const String USER_PASS    = secretData.USER_PASS;
 
 // Objek Firebase dan client
 UserAuth user_auth(Web_API_KEY, USER_EMAIL, USER_PASS);
