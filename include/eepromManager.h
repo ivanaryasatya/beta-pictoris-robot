@@ -65,7 +65,9 @@ public:
             remove(pointer);
         }
 
-        String payload = String(pointer) + data + "\n";
+        String payload = String(pointer);
+        payload += data;
+        payload += "\n";
         int end = findEnd();
         if(end + payload.length() >= size){
             compact();

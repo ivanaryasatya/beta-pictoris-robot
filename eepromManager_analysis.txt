@@ -1,0 +1,92 @@
+ANALISIS KODE: EEPROMManager (include/eepromManager.h)
+
+==================================================
+1. GAMBARAN UMUM (OVERVIEW)
+==================================================
+Class `EEPROMManager` adalah sebuah manajer penyimpanan memori non-volatile (EEPROM) yang dirancang untuk menyimpan data berbasis bentuk pasangan Key-Value.
+- Key (Pointer): Direpresentasikan dengan sebuah karakter tunggal / satu byte (`char`).
+- Value (Data): Direpresentasikan dengan tipe string teks standar (`String`).
+- Separator/Pembatas: Karakter enter (newline) / `\n` digunakan sebagai penanda sah akhir dari sebuah satu record utuh.
+- Empty Space: Blok kosong memori atau rekaman yang telah dihapus akan dikembalikan serta ditandai dengan nilai byte heksadesimal `0xFF`.
+
+Format penyimpanan yang terbentuk pada flash memory akan berbentuk:
+[Pointer][Data]\n 
+Contoh bentuk biner/teks: ADataSensor\nB100\n
+
+==================================================
+2. ALUR KERJA FUNGSI-FUNGSI UTAMA
+==================================================
+A. begin(int eepromSize)
+   Menerima parameter berupa ukuran (size) dari layout EEPROM dan melakukan inisialisasi di level hardware via `EEPROM.begin(size)`. Fungsi ini wajar dan wajib disediakan untuk di-running pada `setup()` pada environment mikrokontroler seperti ESP8266/ESP32.
+
+B. save(char pointer, String data)
+   Alur kerja saat merekam entri data yang baru:
+   1. Mengecek ekuivalensi (validasi redundan): Jika nilai yang akan di-write sama persis dengan yang telah tersimpan (diverifikasi via `get()`), sistem akan seketika me-return status `true` alias abai. Ini amat sangat baik guna menghemat usia pakai EEPROM (write-cycles hardware).
+   2. Melakukan looping pencarian sembari mengecek eksistensi `pointer` pada memori berjalan. Bila bersinggungan blok kosong berpenanda `0xFF`, pencarian disudahi.
+   3. Jika kunci record lama telah ada (isExist), fungsi langsung memanggil sub-fungsi `remove(pointer)` guna mengosongkannya. Membuka jalan untuk proses "Replace".
+   4. Membentuk satu gumpal payload teks: `<pointer>` + `<data>` + `\n`.
+   5. Mengeksekusi penentuan titik ujung akhir kosong (`findEnd()`). Apabila kapasitas tertulis tidak fit, fungsi memanggil opsi defragmentasi internal (`compact()`).
+   6. Bytes payload kemudian dijejalkan per-karakter hingga selesai menggunakan `EEPROM.write()` di ujung, lalu diakhiri segel flush ke flash dengan `EEPROM.commit()`.
+
+C. get(char pointer)
+   Alur langkah ekstrasi data yang dicari:
+   1. Melakukan scanning dari awal titik indeks ukuran array. Akan tetapi ia hanya peduli secara spesifik mengecek kesetaraan karakter yang posisinya berada di ujung pangkal permulaan baris (`isStart == true`).
+   2. Jika ia menemukan `pointer` yang klop, ia mengubah flag bendera iterasi (`reading = true`), seraya merubah bendera inisiasi record.
+   3. Setiap karakter pada step indeks selanjutnya mulai dirajut lalu dimasukan ke sebuah entitas string buffer.
+   4. Apabila iterasi tersebut menyentuh indikator byte line feed (`\n`), fungsi langsung membongkar bawaan utuh memori return buffer secara utuh.
+
+D. remove(char pointer)
+   Alur kerja pemusnahan paksa jejak memori:
+   1. Mirip pada modul algoritma Get, fungsi akan memindai di mana rekaman dengan abjad `pointer` berada.
+   2. Seketika match, flag status variabel `deleting` akan menyala.
+   3. Looping dipaksa terus berjalan sambil mengeksekusi override data-data di bawah indeksnya, mereset isinya merujuk pada kode hex default memori kosong mikrokontroler: `0xFF`. 
+   3. Penimpaan penihilan data tersebut hanya stop apabila iterasi tersebut mengenai palang pintu pembatas karakter record (\n).
+   4. Puncaknya perubahan di-flash ke dalam drive komit (`commit()`).
+   5. Segera memanggil modul perapatan disk, yaitu `compact()`.
+
+E. findEnd() & compact() 
+   - `findEnd()` bertugas mengekstraksi titik nol / angka titik indeks dari memori pertama yang mengemban nilai `0xFF`, yang dianggap sebagai batasan akhir ruang beroperasi.
+   - `compact()` adalah mekanisme defragmentasi penipisan rongga. Mengapa ada rongga kosong? Ini terjadi karena aksi `remove()`. Algoritma kerjanya akan merekam seluruh data vital kemudian menggeser datanya selangkah-demi-selangkah untuk menutupi blok nilai '0xFF' yang bolong di tengah barisan. Efeknya, memori padat dari indeks awal berurut, lalu membebaskan secara bersih ruang terbuang di sisi akhir array.
+
+F. getAll(), used(), dan free()
+   Fungsi utility tambahan yang bersifat transparan:
+   - `getAll()` mengaduk total isi teks mengabaikan nilai bit penanda kosong `0xFF` menelanjangi raw value-nya.
+   - `used()` memantulkan balik integer dari titik puncak perbatasan array indeks dari balasan `findEnd()`.
+   - `free()` memprediksi kalkulasi matematis memori kosong tersisa: (Total Size dikurangi Angka Indeks Berjalan `findEnd()`).
+
+==================================================
+3. ANALISIS ERROR / POTENSI BUG DAN LIMITASI
+==================================================
+Sistem telah dirancang dengan logic array buffer dan garbage collector in-place memory yang sangat elegan. Walaupun tidak menunjukan "Crash Fatal" (seperti halnya memory-leak out of RAM constraints pointer C++), struktur kode sistem parser data ini memiliki cacat teknikal / Bug potensial yang akan merusak integritas input yang harus diperhatikan:
+
+A. Kerentanan Cacat Karakter Khusus (Data Constraint Error / Format String Bug)
+   Kelemahan paling beresiko. Karena perumusan struktur data bergantung mutlak pada pembatas (separator dan blank indikator specific), ada dua pantangan ekstrem yang akan melumpuhkan kode:
+   - Karakter 'Newline' (`\n`): Jika parameter `data` atau `pointer` yang dicoba direkam melaui fungsi `save(.., ..)` memuat string enter vertikal internal... Algoritma validasi `get()`, `remove()` dan scanner lainnya akan mengira record sudah terhenti di tengah jalan. Hal ini mengakibatkan Truncated / data buntung dan error parser untuk record setelahnya.
+   - Karakter bit `0xFF`: Secara natural format ini dipakai EEPROM untuk alokasi memori nihil. Akan tetapi apabila variabel `String data` secara tak sadar menggunakan inject binary `\xFF`. Modul `compact()` pada detik itu juga akan menganggapnya celah sampah dan seketika DIHAPUS, lalu disambung rapat. Hal ini menyebabkan distorsi pada data teksnya sendiri.
+
+B. Off-by-One "Bug" Inefisiensi Validasi Ruang Memori (`if >= size`)
+   Apabila menganalisis sub-logika parameter space saat fungsi `save()` berlangsung:
+   ```cpp
+   if(end + payload.length() >= size){ ... }
+   ```
+   Penggunaan operator komparasi Lebih Besar Sama Dengan (`>=`) berakibat pada pembuangan paksa (wasted-space) 1 Byte mutlak di ujung barisan. Alih-alih merespon eksekusi berhasil karena data sejatinya benar-benar pas menabrak titik nol di `size`, ia justru menolaknya mentah-mentah (False). 
+   Saran perbaikan: Seharusnya menggunakan sintax `if(end + payload.length() > size)` agar ukuran panjang data maksimum benar-benar 100% bisa dihimpun jika ukurannya persis dengan ruang flash tersisa.
+
+C. Redundansi Pemanggilan Logika pada save() (CPU & IO Call Cycle Waste)
+   Pada algoritma `save()`, jika panjang space memori diprediksi tak cukup panjang, eksekutor akan coba meminta fungsi defrag berbunyi:
+   ```cpp
+   if(end + payload.length() >= size){
+       compact();
+       end = findEnd(); ...
+   ```
+   Runtutan ini sesungguhnya redudan alias tak beguna. Mengapa? Karena sebelum sampai di blok ini saat "Mekanisme Replace/Edit", program sudah mengeksekusi `remove()`; dan di baris terujung dari instruksi `remove()` otomatis IA SUDAH memanggil `compact()`.
+   Jadi dapat dpastikan memori akan selalu mampat/kompak setiap saat dan TIDAK ADA lubang `0xFF` tersembunyi yang bersembunyi antar himpunan huruf. Maka, memanggil `compact()` sekali lagi saat blok penuh tidak akan mengecilkan ruang sedetik pun. 
+
+D. Inefisiensi Iterasi Loop pada getAll()
+   Logika pada parameter `getAll()` secara buta memaksakan pembacaan iteratif byte mulai indeks nol merayap melintasi index nol (0) hingga angka konstan "Max Size EEPROM":
+   ```cpp
+   for(int i=0;i<size;i++){
+        char c = EEPROM.read(i); ...
+   ```
+   Meskipun rentang penggunaan memori sesungguhnya baru terisi sedikit (misalnya 5 bytes pada memori max 4096). EEPROM seolah akan dipaksa membaca satu-satu hingga baris akhir. Ini akan berefek memalukan pada peforma latensi baca jika komponen menggunakan module EEPROM bertipe I2C eksternal lambat. Selain itu bisa menyeret dan merangkai data sisa acak/garbage (jika kebetulan chip belum terformat full reset default byte `0xFF`).
+   Saran perbaikan: Menggunakan iterasi merujuk titik puncak data valid: `int maxLimit = findEnd();` ketimbang menggunakan mentahan array `size`.

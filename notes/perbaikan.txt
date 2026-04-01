@@ -1,0 +1,4 @@
+3/26/2026
+gunakan konfigurasi baterai 2sp4 supaya jadi 8000mah 7.4v. motor pakai hasil stepup dari modul stepup dan roda pakai 7.4v
+langsung dari baterai servo pakai hasil stepdown
+stepdown 5v, stepdown 6v, stepup 24v, stepdown charger

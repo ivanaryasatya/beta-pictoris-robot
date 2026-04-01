@@ -9,5 +9,6 @@ class EEPROMPointer {
     cchar userEmail ='d';
     cchar userPassword ='e';
     cchar databaseURL ='f';
+    cchar logState ='L';
 };
-EEPROMPointer eepromPointer;
+EEPROMPointer epmPtr;

@@ -1,109 +1,118 @@
 #pragma once
-
 #include <Arduino.h>
 
-using cuint = const unsigned int;
-using cbyte = const byte;
-
 class MotorDriver {
-  private:
-    int a_in1, a_in2, a_en;
-    int b_in1, b_in2, b_en;
-    int pwm_freq;
-    int pwm_res;
-    int channelA, channelB;
+private:
+    uint8_t _enA;
+    uint8_t _in1;
+    uint8_t _in2;
+    uint8_t _in3;
+    uint8_t _in4;
+    uint8_t _enB;
 
-    void driveMotor(cbyte in1, cbyte in2, cbyte en, cbyte channel, int speed) {
-      speed = constrain(speed, -255, 255);
-
-      if (speed == 0) {
-        digitalWrite(in1, LOW);
-        digitalWrite(in2, LOW);
-        ledcWrite(channel, 0);
-        return;
-      }
-
-      if (speed > 0) {
-        digitalWrite(in1, HIGH);
-        digitalWrite(in2, LOW);
-      } else {
-        digitalWrite(in1, LOW);
-        digitalWrite(in2, HIGH);
-        speed = -speed; // ubah jadi positif untuk PWM
-      }
-
-      ledcWrite(channel, speed);
+public:
+    /**
+     * @brief Inisialisasi pin driver L298N.
+     * @param enA Pin ENA (PWM Motor A)
+     * @param in1 Pin IN1 (Arah 1 Motor A)
+     * @param in2 Pin IN2 (Arah 2 Motor A)
+     * @param in3 Pin IN3 (Arah 1 Motor B)
+     * @param in4 Pin IN4 (Arah 2 Motor B)
+     * @param enB Pin ENB (PWM Motor B)
+     */
+    MotorDriver(uint8_t enA, uint8_t in1, uint8_t in2, uint8_t in3, uint8_t in4, uint8_t enB) {
+        _enA = enA;
+        _in1 = in1;
+        _in2 = in2;
+        _in3 = in3;
+        _in4 = in4;
+        _enB = enB;
     }
 
-  public:
-    // Constructor
-    MotorDriver(cuint _a_in1, cuint _a_in2, cuint _a_en,
-                cuint _b_in1, cuint _b_in2, cuint _b_en,
-                cuint _channelA, cuint _channelB,
-                cuint _pwm_freq = 20000, cuint _pwm_res = 8) {
-      a_in1 = _a_in1; a_in2 = _a_in2; a_en = _a_en;
-      b_in1 = _b_in1; b_in2 = _b_in2; b_en = _b_en;
-      channelA = _channelA; channelB = _channelB;
-      pwm_freq = _pwm_freq; pwm_res = _pwm_res;
-    }
-
+    /**
+     * @brief Setup pin mode (panggil fungsi ini di setup() Arduino).
+     */
     void begin() {
-      pinMode(a_in1, OUTPUT);
-      pinMode(a_in2, OUTPUT);
-      pinMode(b_in1, OUTPUT);
-      pinMode(b_in2, OUTPUT);
-
-      ledcSetup(channelA, pwm_freq, pwm_res);
-      ledcSetup(channelB, pwm_freq, pwm_res);
-
-      ledcAttachPin(a_en, channelA);
-      ledcAttachPin(b_en, channelB);
+        pinMode(_enA, OUTPUT);
+        pinMode(_in1, OUTPUT);
+        pinMode(_in2, OUTPUT);
+        pinMode(_in3, OUTPUT);
+        pinMode(_in4, OUTPUT);
+        pinMode(_enB, OUTPUT);
+        
+        // Memastikan motor dalam keadaan mati saat awal
+        stop();
     }
 
-    void setMotorA(cuint speed) {
-      driveMotor(a_in1, a_in2, a_en, channelA, speed);
+    /**
+     * @brief Kontrol Motor A (kiri).
+     * @param speed Kecepatan motor, nilai berkisar -255 hingga 255.
+     *              (Positif = maju, Negatif = mundur, 0 = berhenti)
+     */
+    void setMotorA(int speed) {
+        // Membatasi nilai agar tidak di luar rentang -255 sampai 255
+        speed = constrain(speed, -255, 255);
+        
+        if (speed > 0) {
+            // Maju
+            digitalWrite(_in1, HIGH);
+            digitalWrite(_in2, LOW);
+            analogWrite(_enA, speed);
+        } else if (speed < 0) {
+            // Mundur
+            digitalWrite(_in1, LOW);
+            digitalWrite(_in2, HIGH);
+            analogWrite(_enA, -speed); // Konversi ke positif untuk PWM
+        } else {
+            // Berhenti
+            digitalWrite(_in1, LOW);
+            digitalWrite(_in2, LOW);
+            analogWrite(_enA, 0);
+        }
     }
 
-    void setMotorB(cuint speed) {
-      driveMotor(b_in1, b_in2, b_en, channelB, speed);
+    /**
+     * @brief Kontrol Motor B (kanan).
+     * @param speed Kecepatan motor, nilai berkisar -255 hingga 255.
+     *              (Positif = maju, Negatif = mundur, 0 = berhenti)
+     */
+    void setMotorB(int speed) {
+        // Membatasi nilai agar tidak di luar rentang -255 sampai 255
+        speed = constrain(speed, -255, 255);
+        
+        if (speed > 0) {
+            // Maju
+            digitalWrite(_in3, HIGH);
+            digitalWrite(_in4, LOW);
+            analogWrite(_enB, speed);
+        } else if (speed < 0) {
+            // Mundur
+            digitalWrite(_in3, LOW);
+            digitalWrite(_in4, HIGH);
+            analogWrite(_enB, -speed); // Konversi ke positif untuk PWM
+        } else {
+            // Berhenti
+            digitalWrite(_in3, LOW);
+            digitalWrite(_in4, LOW);
+            analogWrite(_enB, 0);
+        }
     }
 
+    /**
+     * @brief Mengontrol kedua motor sekaligus.
+     * @param speedA Kecepatan Motor A (-255 s/d 255)
+     * @param speedB Kecepatan Motor B (-255 s/d 255)
+     */
+    void setMotors(int speedA, int speedB) {
+        setMotorA(speedA);
+        setMotorB(speedB);
+    }
+
+    /**
+     * @brief Menghentikan kedua motor.
+     */
     void stop() {
-      setMotorA(0);
-      setMotorB(0);
+        setMotorA(0);
+        setMotorB(0);
     }
 };
-
-
-
-
-// #include "MotorDriver.h"
-
-// // Driver 1
-// MotorDriver driver1(27,26,14, 25,33,32, 0,1);
-
-// // Driver 2 (misal motor lain)
-// MotorDriver driver2(12,13,4, 15,2,5, 2,3);
-
-// void setup() {
-//   Serial.begin(115200);
-//   driver1.begin();
-//   driver2.begin();
-// }
-
-// void loop() {
-//   // Driver 1 maju
-//   driver1.setMotorA(200);
-//   driver1.setMotorB(200);
-
-//   // Driver 2 mundur
-//   driver2.setMotorA(-150);
-//   driver2.setMotorB(-150);
-
-//   delay(2000);
-
-//   driver1.stop();
-//   driver2.stop();
-
-//   delay(2000);
-// }

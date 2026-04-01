@@ -1,5 +1,5 @@
 
-#include <Arduino.h>
+#include <Arduino.h> 
 #include "FirebaseHandler.h"
 #include "eepromManager.h"
 #include "secretData.h"
@@ -11,17 +11,22 @@
 #include "servoController.h"
 #include "commandParser.h"
 #include "uartProtocol.h"
+#include "pins.h"
+#include "serialLogger.h" 
+#include "eepromPointer.h"
+#include "logMessage.h"
+#include "wifiHandler.h"
+#include "motorDriver.h"
 
-#define WIFI_SSID "ADAN"
-#define WIFI_PASSWORD "titanasri"
-#define API_KEY "AIzaSyAIBdhO3OfKWXTPZoowuRNbxNTCQ6vW2qo"
-#define USER_EMAIL "esp32@betapictoris.com"
-#define USER_PASSWORD "betapictorisshooterrobotesp32"
-#define DATABASE_URL "https://sollarion-f7d4f-default-rtdb.asia-southeast1.firebasedatabase.app"
+// #define WIFI_SSID secretData.WIFI_SSID
+// #define WIFI_PASSWORD secretData.WIFI_PASSWORD
+// #define API_KEY secretData.Web_API_KEY
+// #define DATABASE_URL secretData.DATABASE_URL
+// #define USER_EMAIL secretData.USER_EMAIL
+// #define USER_PASSWORD secretData.USER_PASSWORD
 
 #define RXD2 16
 #define TXD2 17
-
 
 using cbyte = const byte;
 using uint = unsigned int;
@@ -29,44 +34,36 @@ using uint = unsigned int;
 FirebaseHandler firebase;
 EEPROMManager memory;
 MutexData<int> sendNumber(0);
-MutexData<int> number(0);
 MutexData<String> interCoreCmdCommand("");  
 MutexData<String> interCoreCmdTarget("");
-MutexData<String> interCoreCmdValue("");
+MutexData<String[10]> interCoreCmdValue;
 
 uint count = 0;
 cbyte esp32 = 0;
 cbyte nano = 1;
 int test = 0;
+bool serialLogState = false;
 
 // Command parsing
-String target, command, value;
+String target, command, value[10];
+int cmdMaxValue, cmdValueCount;
 
 String serialInput;
 UARTProtocol uart(Serial2);
 
-const byte CMD_GET_NUMBER = 0x10;
-const byte CMD_NUMBER     = 0x11;
-const byte CMD_RESTART    = 0x12;
+MotorDriver motor(pins.wheelDriver_r.ENA, pins.wheelDriver_r.IN1, pins.wheelDriver_r.IN2, pins.wheelDriver_r.IN3, pins.wheelDriver_r.IN4, pins.wheelDriver_r.ENB);
+MotorDriver motor2(pins.wheelDriver_l.ENA, pins.wheelDriver_l.IN1, pins.wheelDriver_l.IN2, pins.wheelDriver_l.IN3, pins.wheelDriver_l.IN4, pins.wheelDriver_l.ENB);
 
 void handleCommand(byte cmd, byte id, byte *data, byte len) {
-  if (cmd == CMD_NUMBER) {
-    int num = (data[0] << 8) | data[1];
-    number.set(num);
-
-
-    // Serial.print("ID ");
-    // Serial.print(id);
-    // Serial.print(" = ");
-    // Serial.println(num);
-
-  }
 }
 
-bool commandRun(const String &target, const String &command, const String &value) {
+bool commandRun(const String &target, const String &command, const String value[], const byte valueCount) {
+
+    // format: target.command.value1.value2;
+    // contoh: esp32.memSave.q.MyWiFi; atau nano.led.on;
     if (target == "rbt") {
         if (command == "restart") {
-            uart.send(CMD_RESTART, 0, NULL);
+            uart.send(uart.mapId.USER_CMD, 0, NULL);
             delay(100);
             ESP.restart();
             return true;
@@ -76,47 +73,112 @@ bool commandRun(const String &target, const String &command, const String &value
     else if (target == "esp32") {
         if (command == "restart") {
             
+        } else if (command == "memSave") {
+            memory.save(value[0][0], value[1]);
+        } else if (command == "memGetAll") {
+            slog.println(memory.getAll());
+        } else if (command == "wifiBegin") {
+            if (valueCount >= 2) {
+                wifi.connect();
+            } else {
+                slog.add(logMes.commandValueLessThanExpected);
+                slog.add(String(valueCount));
+                slog.println();
+            }
+        } else if (command == "wifiStatus") {
+            slog.println(wifi.isConnected() ? logMes.wifiConnected : logMes.wifiNotConnected);
+        } else if (command == "wifiLocalIP") {
+            slog.add(logMes.wifiLocalIP);
+            slog.add(wifi.getIP());
+            slog.println();
+        } else if (command == "wifiScan") {
+        } else if (command == "wifiList") {
+        } else if (command == "sendNumber") {
+            int num = value[0].toInt();
+            sendNumber.set(num);
+        } else if (command == "freeHeap") {
+            slog.add("Free heap: ");
+            slog.add(String(ESP.getFreeHeap()));
+            slog.println();
+        } else if (command == "minFreeHeap") {
+            slog.add("Minimum free heap: ");
+            slog.add(String(ESP.getMinFreeHeap()));
+            slog.println();
+        } else {
+            slog.println(logMes.invalidCommand);
+            return false;
         }
-
     } else if (target == "nano") {
-        if (command == "led") {
-            
+        if (command == "sendCommand" && valueCount >= 1) {
+            uart.send(uart.mapId.USER_CMD, 0, (byte*)value[0].c_str());
         }
+    } else {
+        slog.println(logMes.invalidCommandTarget);
+        return false;
     }
-
     return false;
 }
 
-// CORE 1: Main function
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+=======================================
+                Core 1
+=======================================
+*/
 void mainFunction(void *pvParameters) {
-    while (1) {
+    static bool mainFunctionHasRunOnce = false;
+    if (!mainFunctionHasRunOnce) {
+        slog.println("ESP32 is starting up");
+        
+        slog.enable(true);
+        Serial.begin(115200);
+        Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
+        uart.begin(handleCommand);
+        
+        memory.begin(512);
+        serialLogState = memory.get(epmPtr.logState) == "1";
+        slog.enable(serialLogState);
+        mainFunctionHasRunOnce = true;
+    }
+
+
+
+    while (true) {
         uart.update();
-        
-        static unsigned long t = 0;
-        if (millis() - t > 1000) {
-            uart.send(CMD_GET_NUMBER, 0, NULL);
-            t = millis();
+
+        if (Serial.available()) {
+            serialInput = Serial.readStringUntil('\n');
+            serialInput.trim();
+            parseCmd(serialInput, target, command, value, cmdMaxValue, cmdValueCount);
+            
+            if (serialInput == "s") {
+                slog.enable(true);
+            }
+
+            if (target == "") {
+                slog.println(logMes.invalidCommandTarget);
+            } else if (command == "") {
+                slog.println(logMes.invalidCommand);
+            } else {
+                cmdValueCount = sizeof(value) / sizeof(value[0]);
+                interCoreCmdCommand.set(command);
+                interCoreCmdTarget.set(target);
+                interCoreCmdValue.set(value);
+
+                commandRun(target, command, value, cmdValueCount);
+            }
         }
-
-        serialInput = Serial.readStringUntil('\n');
-        serialInput.trim();
-        parseCmd(serialInput, target, command, value);
-
-        if (target == "") {
-            Serial.println("Invalid command target");
-        } else if (command == "") {
-            Serial.println("Invalid command");
-        } else {
-            interCoreCmdCommand.set(command);
-            interCoreCmdTarget.set(target);
-            interCoreCmdValue.set(value);
-            commandRun(target, command, value);
-        }
-
-        
-        
-        
-
 
         static unsigned long lastTime = 0;
         static unsigned long loopCount = 0;
@@ -124,40 +186,22 @@ void mainFunction(void *pvParameters) {
         loopCount++;
 
         if (millis() - lastTime >= 1000) {
-            Serial.print("Loop rate core1: ");
-            Serial.print(loopCount);
-            Serial.println(" Hz");
+            slog.add("Loop rate core1: ");
+            slog.add(String(loopCount));
+            slog.add(" Hz");
+            slog.println();
 
             loopCount = 0;
             lastTime = millis();
         }
         
-
-
-        vTaskDelay(5 / portTICK_PERIOD_MS);
-        yield();
-    }
-}
-
-void internet(void *pvParameters) {
-    static long lastMillis = 0;
-    while (1) {
-
-
-        if (millis() - lastMillis >= 400) {
-            lastMillis = millis();
-            firebase.sendInt("/test/sensor", number.get());
-            esp_task_wdt_reset();
-            parseCmd(firebase.getString("/test/command"), target, command, value);
-            esp_task_wdt_reset();
-            if (command != ""){ Serial.println(command); }
-            count ++;
+        static unsigned long coreLastMillis = 0;
+        if (millis() - coreLastMillis >= 1000) {
+            Serial.println("core one is alive");
+            coreLastMillis = millis();
         }
 
-        
-
-
-        vTaskDelay(15 / portTICK_PERIOD_MS);
+        vTaskDelay(5 / portTICK_PERIOD_MS);
         yield();
     }
 }
@@ -170,61 +214,67 @@ void runtime(void *pvParameters) {
     }
 }
 
-void output(cbyte device, const String &msg) {
-    static String deviceName = "ESP32";
-    byte core = 0;
-    if (msg == "") return;
-    if (device == 0) {
-        deviceName = "ESP32";
-        core = xPortGetCoreID();
-    } else if (device == 1) {
-        deviceName = "NANO";
-    } else {
-        deviceName = "UNKNOWN";
+
+
+
+
+
+
+
+
+
+/*
+=======================================
+                Core 0
+=======================================
+*/
+void internet(void *pvParameters) {
+    static long lastMillis = 0;
+    static bool internetFunctionHasRunOnce = false;
+
+    if (!internetFunctionHasRunOnce) {
+         wifi.connect();
+    //     firebase.begin(
+    //         secretData.Web_API_KEY,
+    //         secretData.DATABASE_URL,
+    //         secretData.USER_EMAIL,
+    //         secretData.USER_PASS
+    //     );
+        internetFunctionHasRunOnce = true;
     }
-    
-    Serial.print(">> ");
-    Serial.print(deviceName);
-    if (device == 0) {
-        Serial.print(core);
+
+    while (1) {
+
+        if (millis() - lastMillis >= 400) {
+            lastMillis = millis();
+            // firebase.sendInt("/test/sensor", number.get());
+            // esp_task_wdt_reset();
+            // parseCmd(firebase.getString("/test/command"), target, command, value, cmdMaxValue, cmdValueCount);
+            // esp_task_wdt_reset();
+            // if (command != ""){ slog.println(command); }
+            //count ++;
+        }
+
+        static unsigned long coreLastMillis = 0;
+        if (millis() - coreLastMillis >= 1000) {
+            Serial.println("core zero is alive");
+            coreLastMillis = millis();
+        }
+
+
+        vTaskDelay(15 / portTICK_PERIOD_MS);
+        yield();
     }
-    Serial.print(": ");
-    Serial.println(msg);
 }
 
 void setup(){
-
-    Serial.begin(115200);
-    Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
-    uart.begin(handleCommand);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    while(WiFi.status() != WL_CONNECTED){
-        delay(300);
-    }
-
-    firebase.begin(
-        API_KEY,
-        DATABASE_URL,
-        USER_EMAIL,
-        USER_PASSWORD
-    );
-
-    memory.begin(512);
-    memory.save('q',"DATA");
-    memory.save('a',"HELLO");
-    String data = memory.get('q');
-    memory.remove('q');
-    Serial.println(data);
-    Serial.println("ALL DATA:");
-    Serial.println(memory.getAll());
-
     esp_task_wdt_init(5, true);
 
     // CORE 0
     xTaskCreatePinnedToCore(
         internet,
         "internet task",
-        12000,
+        50000,
         NULL,
         1,
         NULL,
@@ -235,7 +285,7 @@ void setup(){
     xTaskCreatePinnedToCore(
         mainFunction,
         "main task",
-        2048,
+        8192,
         NULL,
         1,
         NULL,
@@ -251,10 +301,11 @@ void setup(){
         NULL,
         1
     );
-
 }
 
-void loop(){}
+void loop(){
+
+}
 
 
 //////////////////////////////////////////////////////////////

@@ -2,6 +2,8 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include "secretData.h"
+#include "serialLogger.h"
+#include "logMessage.h"
 
 class WifiHandler {
 private:
@@ -15,28 +17,31 @@ public:
         password = secretData.WIFI_PASSWORD;
     }
 
-    void connect() {
+    // 1 = connected, 0 = not connected, 2 = already connected
+    byte connect() {
         if (isConnected()) {
-            Serial.println("WiFi sudah terhubung.");
-            return;
+            return 2;
         }
 
         WiFi.begin(ssid.c_str(), password.c_str());
-        Serial.print("Menghubungkan ke WiFi");
+        slog.println(logMes.wifiConnecting);
         
         while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+            slog.print(logMes.wifiConnecting);
             Serial.print(".");
             delay(500);
             attempts++;
         }
         
         if (isConnected()) {
-            Serial.println("\nWiFi terhubung.");
-            Serial.print("IP Address: ");
-            Serial.println(WiFi.localIP());
+            slog.addLine(logMes.wifiConnected);
+            slog.add(logMes.wifiLocalIP);
+            slog.addLine(WiFi.localIP().toString());
+            slog.print();
         } else {
-            Serial.println("\nGagal terhubung ke WiFi.");
+            slog.println(logMes.wifiConnectionFailed);
         }
+        return isConnected() ? 1 : 0;
     }
 
     void setAttempts(const byte newAttempts) {
@@ -72,19 +77,19 @@ public:
 
     void reconnect() {
         if (!isConnected()) {
-            Serial.println("Mencoba menghubungkan kembali...");
+            slog.println(logMes.retryingConnection);
             connect();
         }
     }
 
     void scanNetworks() {
-        Serial.println("Memulai scan WiFi...");
+        slog.println(logMes.wifiStartingScan);
         int n = WiFi.scanNetworks();
         if (n == 0) {
-            Serial.println("Tidak ada jaringan WiFi yang ditemukan.");
+            slog.println(logMes.wifiNoNetworksFound);
         } else {
-            Serial.print(n);
-            Serial.println(" jaringan ditemukan:");
+            slog.add(String(n));
+            slog.addLine(logMes.wifiNetworksFound);
             for (int i = 0; i < n; ++i) {
                 Serial.print(i + 1);
                 Serial.print(": ");
@@ -100,9 +105,10 @@ public:
     void setCredentials(String newSSID, String newPassword) {
         ssid = newSSID;
         password = newPassword;
-        Serial.println("Kredensial WiFi diperbarui.");
-        Serial.print("SSID Baru: ");
-        Serial.println(ssid);
+        slog.addLine(logMes.credentialsUpdated);
+        slog.add(logMes.newSSID);
+        slog.addLine(ssid);
+        slog.print();
     }
 
 
@@ -123,13 +129,14 @@ public:
         }
 
         if(result) {
-            Serial.println("Access Point berhasil dimulai.");
-            Serial.print("SSID AP: ");
-            Serial.println(apSsid);
-            Serial.print("IP AP: ");
-            Serial.println(WiFi.softAPIP());
+            slog.addLine(logMes.accessPointStarted);
+            slog.add(logMes.ssidAp);
+            slog.addLine(apSsid);
+            slog.add(logMes.ipAp);
+            slog.addLine(WiFi.softAPIP().toString());
+            slog.print();
         } else {
-            Serial.println("Gagal memulai Access Point.");
+            slog.println(logMes.accessPointFailed);
         }
         return result;
     }
@@ -137,16 +144,16 @@ public:
     bool configAP(IPAddress local_ip, IPAddress gateway, IPAddress subnet) {
         bool result = WiFi.softAPConfig(local_ip, gateway, subnet);
         if(result) {
-            Serial.println("Konfigurasi IP AP berhasil diubah.");
+            slog.println(logMes.accessPointSuccessfullyConfigured);
         } else {
-            Serial.println("Gagal mengubah konfigurasi IP AP.");
+            slog.println(logMes.accessPointConfigurationFailed);
         }
         return result;
     }
 
     void stopAP() {
         WiFi.softAPdisconnect(true);
-        Serial.println("Access Point dihentikan.");
+        slog.println(logMes.accessPointStopped);
     }
 
     String getAPIP() {

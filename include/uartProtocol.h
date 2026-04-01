@@ -2,21 +2,16 @@
 
 #include <Arduino.h>
 
-// =============================
-// CONFIG
-// =============================
 #define UART_HEADER  0xAA
 #define UART_FOOTER  0x55
-#define UART_MAX_DATA 16
+#define UART_MAX_DATA 32
 
-// =============================
-// TYPEDEF HANDLER
-// =============================
+// format: header | cmd | id | len | data | checksum | footer
+// size:   1      | 1   | 1  | 1   | 32   | 1        | 1
+
 typedef void (*CommandHandler)(byte cmd, byte id, byte *data, byte len);
+using cbyte = const byte;
 
-// =============================
-// CLASS
-// =============================
 class UARTProtocol {
 public:
   UARTProtocol(Stream &serial) : _serial(serial) {}
@@ -27,6 +22,15 @@ public:
   void begin(CommandHandler handler) {
     _handler = handler;
   }
+
+  struct MapId {
+    cbyte CMD_GET_NUMBER = 0x10;
+    cbyte CMD_NUMBER     = 0x11;
+    cbyte RESTART        = 0x12;
+    cbyte USER_CMD       = 0x13;
+    cbyte PING           = 0x14;
+    cbyte PONG           = 0x15;
+  } mapId;
 
   // =============================
   // SEND
