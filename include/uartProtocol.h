@@ -1,10 +1,8 @@
 #pragma once
 
 #include <Arduino.h>
-
-#define UART_HEADER  0xAA
-#define UART_FOOTER  0x55
-#define UART_MAX_DATA 32
+cbyte UART_MAX_DATA = 32;
+cbyte v = 'a';
 
 // format: header | cmd | id | len | data | checksum | footer
 // size:   1      | 1   | 1  | 1   | 32   | 1        | 1
@@ -15,31 +13,98 @@ using cbyte = const byte;
 class UARTProtocol {
 public:
   UARTProtocol(Stream &serial) : _serial(serial) {}
-
-  // =============================
-  // INIT
-  // =============================
   void begin(CommandHandler handler) {
     _handler = handler;
   }
+  
 
-  struct MapId {
-    cbyte CMD_GET_NUMBER = 0x10;
-    cbyte CMD_NUMBER     = 0x11;
-    cbyte RESTART        = 0x12;
-    cbyte USER_CMD       = 0x13;
-    cbyte PING           = 0x14;
-    cbyte PONG           = 0x15;
-  } mapId;
+struct MapId {
+  cbyte UART_HEADER    = 0xAA;
+  cbyte UART_FOOTER    = 0x55;
 
-  // =============================
-  // SEND
-  // =============================
+  cbyte BUZZER         = 0x01;
+  cbyte RESTART        = 0x02;
+  cbyte USER_CMD       = 0x03;
+  cbyte PING           = 0x04;
+  cbyte PONG           = 0x05;
+  cbyte TIME           = 0x06;
+  cbyte HALL           = 0x07;
+  cbyte ULTRASONIC     = 0x08;
+  cbyte VALUE          = 0x09;
+  
+  struct IrSensors {
+    cbyte CATCHER           = 0x0A;
+    cbyte DROP_POINT        = 0x0B;
+    cbyte SHOOT             = 0x0C;
+    cbyte SPEED_MOTOR_RIGHT = 0x0D;
+    cbyte SPEED_MOTOR_LEFT  = 0x0E;
+  } irSensor;
+
+  struct Servos {
+    struct CATCHER {
+      cbyte ANGLE = 0x0F;
+      cbyte SPEED = 0x10;
+    } catcher;
+
+    struct LIFTER {
+      cbyte ANGLE = 0x11;
+      cbyte SPEED = 0x12;
+    } lifter;
+
+    struct MEGAZINE {
+      cbyte ANGLE = 0x13;
+      cbyte SPEED = 0x14;
+    } megazine;
+
+    struct SHOOTER {
+      cbyte ANGLE = 0x15;
+      cbyte SPEED = 0x16;
+    } shooter;
+
+    struct BARREL {
+      cbyte ANGLE = 0x17;
+      cbyte SPEED = 0x18;
+    } barrel;
+  } servo;
+  
+  struct Leds {
+    struct RIGHT {
+      cbyte ON  = 0x19;
+      cbyte OFF = 0x1A;
+    } right;
+
+    struct LEFT {
+      cbyte ON  = 0x1B;
+      cbyte OFF = 0x1C;
+    } left;
+
+    struct LASER {
+      cbyte ON  = 0x1D;
+      cbyte OFF = 0x1E;
+    } laser;
+  } led;
+  
+  struct Motors {
+    struct Right {
+      cbyte SPEED  = 0x1F;
+    } right;
+
+    struct Left {
+      cbyte SPEED  = 0x20;
+    } left;
+
+    struct Fan {
+      cbyte SPEED  = 0x21;
+    } fan;
+  } motor;
+
+} mapId;
+
   void send(byte cmd, byte len, byte *data) {
 
     byte checksum = calcChecksum(cmd, _packetID, len, data);
 
-    _serial.write(UART_HEADER);
+    _serial.write(mapId.UART_HEADER);
     _serial.write(cmd);
     _serial.write(_packetID);
     _serial.write(len);
@@ -49,15 +114,12 @@ public:
     }
 
     _serial.write(checksum);
-    _serial.write(UART_FOOTER);
+    _serial.write(mapId.UART_FOOTER);
 
     _lastID = _packetID;
     _packetID++;
   }
 
-  // =============================
-  // UPDATE (WAJIB DI LOOP)
-  // =============================
   void update() {
     while (_serial.available()) {
       parse(_serial.read());
@@ -86,24 +148,18 @@ private:
 
   State _state = WAIT_HEADER;
 
-  // =============================
-  // CHECKSUM
-  // =============================
   byte calcChecksum(byte cmd, byte id, byte len, byte *data) {
     byte sum = cmd ^ id ^ len;
     for (byte i = 0; i < len; i++) sum ^= data[i];
     return sum;
   }
 
-  // =============================
-  // PARSER
-  // =============================
   void parse(byte b) {
 
     switch (_state) {
 
       case WAIT_HEADER:
-        if (b == UART_HEADER) _state = READ_CMD;
+        if (b == mapId.UART_HEADER) _state = READ_CMD;
         break;
 
       case READ_CMD:
@@ -133,7 +189,7 @@ private:
         break;
 
       case WAIT_FOOTER:
-        if (b == UART_FOOTER) {
+        if (b == mapId.UART_FOOTER) {
           byte calc = calcChecksum(_cmd, _id, _len, _buffer);
 
           if (calc == _checksum && _handler) {

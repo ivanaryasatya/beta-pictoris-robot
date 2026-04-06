@@ -27,11 +27,8 @@
 // #define DATABASE_URL secretData.DATABASE_URL
 // #define USER_EMAIL secretData.USER_EMAIL
 // #define USER_PASSWORD secretData.USER_PASSWORD
-
-#define RXD2 16
-#define TXD2 17
-
 using cbyte = const byte;
+using cuint = const unsigned int;
 using uint = unsigned int;
 
 // Struct wrapper untuk array String[10]
@@ -39,12 +36,18 @@ struct StringArray10 {
     String data[10];
 };
 
+struct InputCommand {
+    String target;
+    String command;
+    String value[16];
+    byte valueCount;
+};
+
 //FirebaseHandler firebase;
 EEPROMManager memory;
 MutexData<int> sendNumber(0);
-MutexData<String> interCoreCmdCommand("");
-MutexData<String> interCoreCmdTarget("");
-MutexData<StringArray10> interCoreCmdValue;
+MutexData<InputCommand> InputCommand;
+
 
 uint count = 0;
 cbyte esp32 = 0;

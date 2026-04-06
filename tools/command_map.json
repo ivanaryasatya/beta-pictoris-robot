@@ -1,7 +1,27 @@
 {
-  "esp32.setLed": "l3",
-  "esp32.setFan": "f1",
-  "nasno.setLed": "l4",
-  "robot.move": "M1",
-  "robot.stop": "M2"
+  
+  "esp32.restart": "aa",
+  "esp32.memSave": "ab",
+  "esp32.memGetAll": "ac",
+  "esp32.memGet": "ad",
+  "esp32.memDelete": "ae",
+  "esp32.memDeleteAll": "af",
+  "esp32.wifiConnect": "ba",
+  "esp32.wifiDisconnect": "bc",
+  "esp32.wifiStatus": "bd",
+  "esp32.wifiScan": "bf",
+  "esp32.wifiGetConfig": "ca",
+  "esp32.wifiSetConfig": "cb",
+  "esp32.wifiGetIP": "cd",
+  "esp32.wifiGetMAC": "ce",
+  "esp32.getInfo": "cf",
+  "esp32.getUptime": "da",
+  "esp32.getFreeHeap": "db",
+  "esp32.getChipID": "dc",
+  "esp32.getFlashSize": "dd",
+  "esp32.minFreeHeap": "de",
+  "esp32.getTemperature": "df",
+  "esp32.enableLog": "ea",
+  "esp32.sendUart" : "eb"
+  
 }
