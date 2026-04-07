@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+using cbyte = const byte;
 cbyte UART_MAX_DATA = 32;
 cbyte v = 'a';
 

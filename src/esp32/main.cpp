@@ -36,18 +36,14 @@ struct StringArray10 {
     String data[10];
 };
 
-struct InputCommand {
-    String target;
-    String command;
-    String value[16];
-    byte valueCount;
-};
-
 //FirebaseHandler firebase;
 EEPROMManager memory;
 MutexData<int> sendNumber(0);
-MutexData<InputCommand> InputCommand;
 
+MutexData<String> mutexCommand;
+MutexData<String> mutexCmdTarget;
+MutexData<StringArray10> mutexCmdValue;
+MutexData<byte> mutexCmdValueCount(0);
 
 uint count = 0;
 cbyte esp32 = 0;
@@ -60,9 +56,8 @@ String target, command, value[16];
 int cmdMaxValue, cmdValueCount;
 
 String serialInput;
-UARTProtocol uart(Serial2);
+UARTProtocol uart(Serial);
 
-// Shared Data Gamepad (Lintas Core Bebas-Crash)
 MutexData<GamepadState> globalGamepadState;
 GamepadState last_state;
 
@@ -74,12 +69,14 @@ const char* NANO_STR = "NANO";
 const char* ESP32_STR = "ESP32";
 const char* RBT_STR = "RBT";
 int espResetTimer = -1;
+int espSleepTimer = -1;
 
 MotorDriver motor(pins.wheelDriver_r.ENA, pins.wheelDriver_r.IN1, pins.wheelDriver_r.IN2, pins.wheelDriver_r.IN3, pins.wheelDriver_r.IN4, pins.wheelDriver_r.ENB);
 MotorDriver motor2(pins.wheelDriver_l.ENA, pins.wheelDriver_l.IN1, pins.wheelDriver_l.IN2, pins.wheelDriver_l.IN3, pins.wheelDriver_l.IN4, pins.wheelDriver_l.ENB);
 
 // Instansiasi Eksekutor Kendaraan Mecanum (motor2 = Kiri, motor = Kanan)
 MecanumDrive mecanum(&motor2, &motor);
+Servo barrelServo;
 
 
 // Fungsi filter untuk menghindari spam output ke serial monitor
@@ -258,17 +255,17 @@ void mainFunction(void *pvParameters) {
     static bool mainFunctionHasRunOnce = false;
     if (!mainFunctionHasRunOnce) {
         slog.println("ESP32 is starting up");
-        
-        // Inisialisasi awal hardware L298N
+
         motor.begin();
         motor2.begin();
         mecanum.stop();
+        servoAttach(barrelServo, pins.servo.barrelPuller);
+        servo360Stop(barrelServo);
 
         slog.enable(true);
         Serial.begin(115200);
-        Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
         uart.begin(uartCommand);
-        
+
         memory.begin(512);
         serialLogState = memory.get(epmPtr.logState) == "1";
         slog.enable(serialLogState);
@@ -301,73 +298,28 @@ void mainFunction(void *pvParameters) {
             //Gamepad action=============================
             if (isGamepadChanged(current_state, last_state)) {
                 
-                if (current_state.cross && !last_state.cross) {
-                    slog.println("Tombol Silang (X) Ditekan! - Aksi: Melompat");
-                }
-                if (current_state.square && !last_state.square) {
-                    slog.println("Tombol Kotak Ditekan! - Aksi: Serang / Reload");
-                }
-                if (current_state.triangle && !last_state.triangle) {
-                    slog.println("Tombol Segitiga Ditekan! - Aksi: Interaksi");
-                }
-                if (current_state.circle && !last_state.circle) {
-                    slog.println("Tombol Lingkaran Ditekan! - Aksi: Batal / Menghindar");
-                }
+                // --- HEMAT MEMORI FLASH ---
+                // String panjang untuk log tombol telah dihapus untuk menghemat flash memory.
 
-                if (current_state.up && !last_state.up) {
-                    slog.println("D-Pad Atas Ditekan!");
-                }
-                if (current_state.down && !last_state.down) {
-                    slog.println("D-Pad Bawah Ditekan!");
-                }
-                if (current_state.left && !last_state.left) {
-                    slog.println("D-Pad Kiri Ditekan!");
-                }
-                if (current_state.right && !last_state.right) {
-                    slog.println("D-Pad Kanan Ditekan!");
-                }
-
-                if (current_state.l1 && !last_state.l1) {
-                    slog.println("L1 Ditekan!");
-                }
-                if (current_state.r1 && !last_state.r1) {
-                    slog.println("R1 Ditekan!");
-                }
-                
-                if (current_state.l3 && !last_state.l3) {
-                    slog.println("L3 (Joystick Kiri Masuk) Ditekan!");
-                }
-                if (current_state.r3 && !last_state.r3) {
-                    slog.println("R3 (Joystick Kanan Masuk) Ditekan!");
-                }
-
-                if (current_state.start && !last_state.start) {
-                    slog.println("Start Ditekan!");
-                }
-                if (current_state.ps && !last_state.ps) {
-                    slog.println("PS Button Ditekan!");
-                }
-
-                // Sensor dengan log framework
-                if (current_state.select && !last_state.select) {
-                    slog.println("\n--- [INFO SENSOR TERKINI] ---");
-                    slog.add("  - Baterai      : "); slog.println(current_state.battery_status);
-                    slog.add("  - Accelerometer: X: "); slog.add(String(current_state.accel_x)); slog.add(" Y: "); slog.add(String(current_state.accel_y)); slog.add(" Z: "); slog.println(String(current_state.accel_z));
-                    slog.add("  - Gyroscope    : Z: "); slog.println(String(current_state.gyro_z));
-                }
-
-                if (abs(current_state.stick_lx) > 10 || abs(current_state.stick_ly) > 10) {
-                    slog.add("Joy L Berjalan -> X: "); slog.add(String(current_state.stick_lx)); slog.add(" | Y: "); slog.println(String(current_state.stick_ly));
-                }
-                if (abs(current_state.stick_rx) > 10 || abs(current_state.stick_ry) > 10) {
-                    slog.add("Joy R Berjalan -> X: "); slog.add(String(current_state.stick_rx)); slog.add(" | Y: "); slog.println(String(current_state.stick_ry));
+                // ==========================================
+                // KONTROL ARAH BARREL (Joy Kiri Y - Servo 360)
+                // ==========================================
+                if (current_state.stick_ly < -20) { // Joystick ke Atas
+                    int speed = map(current_state.stick_ly, -20, -128, 0, 90);
+                    servo360Left(barrelServo, speed);
+                } else if (current_state.stick_ly > 20) { // Joystick ke Bawah
+                    int speed = map(current_state.stick_ly, 20, 127, 0, 90);
+                    servo360Right(barrelServo, speed);
+                } else {
+                    servo360Stop(barrelServo);
                 }
 
                 // ==========================================
-                // KONTROL MECANUM WHEELS (Kirim PWM ke Driver L298N)
+                // KONTROL MECANUM WHEELS
                 // ==========================================
-                // Mapping: Joy Kanan = Maju/Strafe, Joy Kiri = Rotasi/Putar Kiri
-                // Nilai Y harus di-inverse karena pada PS3 ditekuk ke atas = bernilai negatif
+                // - Joy Kanan (X, Y) untuk Translasi (Strafe dan Maju/Mundur)
+                // - Joy Kiri (X) untuk Rotasi (Belok Kanan/Kiri)
+                // Nilai Y di-inverse karena ditekuk ke atas = negatif
                 mecanum.drive(current_state.stick_rx, -current_state.stick_ry, current_state.stick_lx);
 
                 // Trigger Getaran Ringan
@@ -401,41 +353,39 @@ void mainFunction(void *pvParameters) {
             serialInput.trim();
             // Bersihkan sisa variabel lama
             target = ""; command = "";
-            for (int i = 0; i < 16; i++) value[i] = ""; // Harus dibongkar juga untuk mencegah "ghost data"
-
-            // Eksekusi Parsing (Pastikan ngirim cmdMaxValue yang BUKAN 0)
+            for (int i = 0; i < 16; i++) value[i] = "";
             cmdMaxValue = sizeof(value) / sizeof(value[0]);
+            
             parseCmd(serialInput, target, command, value, cmdMaxValue, cmdValueCount);
             
-            // Lakukan print DEBUGGING SETELAH fungsi parsing!
             slog.println("Received serial input: " + serialInput);
             slog.println("Hasil Parsing -> target: " + target + " | command: " + command + " | value: " + value[0]);
             
             if (serialInput == "s") {
                 static bool isSerialInputEnabled = false; 
-                isSerialInputEnabled = !isSerialInputEnabled; 
+                isSerialInputEnabled = !isSerialInputEnabled;
+                memory.save(epmPtr.logState, isSerialInputEnabled ? "1" : "0");
                 slog.enable(isSerialInputEnabled);
                 slog.add("Log status: ");
                 slog.add(isSerialInputEnabled ? "ON" : "OFF");
                 slog.println();
             }
 
-            // --- PROTEKSI TARGET ---
-            // Hanya eksekusi commandRun() jika var target tidak dibiarkan kosong
             if (target == "") {
-                // Biarkan saja (Tidak usah lempar error karena ini bisa saja cuma ketikan tes 's')
+                slog.println(logMes.invalidCommandTarget);
             } else if (command == "") {
                 slog.println(logMes.invalidCommand);
             } else {
                 cmdValueCount = sizeof(value) / sizeof(value[0]);
-                interCoreCmdCommand.set(command);
-                interCoreCmdTarget.set(target);
+
+                mutexCommand.set(command);
+                mutexCmdTarget.set(target);
+                mutexCmdValueCount.set(cmdMaxValue);
                 StringArray10 tempValue;
                 for (int i = 0; i < 10; i++) {
                     tempValue.data[i] = value[i];
                 }
-                interCoreCmdValue.set(tempValue);
-
+                mutexCmdValue.set(tempValue);
                 commandRun(target, command, value, cmdValueCount);
             }
         }
@@ -485,7 +435,6 @@ void mainFunction(void *pvParameters) {
             }
         }
         //ESP32 restart timer endl=========================
-        
 
         static unsigned long coreLastMillis = 0;
         if (millis() - coreLastMillis >= 2000) {
@@ -543,7 +492,7 @@ void wlConnection(void *pvParameters) {
 
         // Backup state background ke Mutex Data secara kontinyu dari PS3 (Core 0)
         if (Ps3.isConnected()) {
-            globalGamepadState.set(gamepad_state);
+            globalGamepadState.set(GamepadState);
         }
 
         if (millis() - lastMillis >= 400) {

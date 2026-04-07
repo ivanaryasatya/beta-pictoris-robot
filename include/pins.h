@@ -3,6 +3,10 @@
 using cbyte = const byte;
 
 struct Pins {
+    struct Uart {
+        cbyte rx = 3;
+        cbyte tx = 1;
+    } esp32Serial;
     struct L298N_r {
         cbyte IN1 = 0;
         cbyte IN2 = 4;
@@ -52,10 +56,10 @@ struct Pins {
         cbyte left = 21;
     } hallSensor;
 
-    struct esp32Serial {
+    struct Esp32Uart {
         cbyte rx = 16;
         cbyte tx = 17;
-    } esp32Serial;
+    } esp32Uart;
 
     struct NanoSerial {
         cbyte rx = 0;

@@ -48,8 +48,3 @@ void printStatus(uint8_t status) {
 
     Serial.println(buffer);
 }
-
-    printStatus(0);
-    printStatus(1);
-    printStatus(2);
-

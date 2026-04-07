@@ -37,8 +37,8 @@ struct GamepadState {
 };
 
 // Variabel global state yang bisa diakses di main.cpp
-extern GamepadState gamepad_state; 
-GamepadState gamepad_state;
+extern GamepadState gamepadState; 
+GamepadState gamepadState;
 
 // Fungsi callback saat PS3 Controller berhasil terkoneksi
 inline void onPs3Connect() {
@@ -57,66 +57,66 @@ inline void onPs3Connect() {
 // Fungsi callback yang dipanggil otomatis saat ada data/event baru dari stik PS3
 inline void onPs3Event() {
     // == 1. Membaca Tombol Digital ==
-    gamepad_state.cross    = Ps3.data.button.cross;
-    gamepad_state.square   = Ps3.data.button.square;
-    gamepad_state.triangle = Ps3.data.button.triangle;
-    gamepad_state.circle   = Ps3.data.button.circle;
-    gamepad_state.up       = Ps3.data.button.up;
-    gamepad_state.right    = Ps3.data.button.right;
-    gamepad_state.down     = Ps3.data.button.down;
-    gamepad_state.left     = Ps3.data.button.left;
-    gamepad_state.l1       = Ps3.data.button.l1;
-    gamepad_state.l2       = Ps3.data.button.l2;
-    gamepad_state.r1       = Ps3.data.button.r1;
-    gamepad_state.r2       = Ps3.data.button.r2;
-    gamepad_state.l3       = Ps3.data.button.l3;
-    gamepad_state.r3       = Ps3.data.button.r3;
-    gamepad_state.select   = Ps3.data.button.select;
-    gamepad_state.start    = Ps3.data.button.start;
-    gamepad_state.ps       = Ps3.data.button.ps;
+    gamepadState.cross    = Ps3.data.button.cross;
+    gamepadState.square   = Ps3.data.button.square;
+    gamepadState.triangle = Ps3.data.button.triangle;
+    gamepadState.circle   = Ps3.data.button.circle;
+    gamepadState.up       = Ps3.data.button.up;
+    gamepadState.right    = Ps3.data.button.right;
+    gamepadState.down     = Ps3.data.button.down;
+    gamepadState.left     = Ps3.data.button.left;
+    gamepadState.l1       = Ps3.data.button.l1;
+    gamepadState.l2       = Ps3.data.button.l2;
+    gamepadState.r1       = Ps3.data.button.r1;
+    gamepadState.r2       = Ps3.data.button.r2;
+    gamepadState.l3       = Ps3.data.button.l3;
+    gamepadState.r3       = Ps3.data.button.r3;
+    gamepadState.select   = Ps3.data.button.select;
+    gamepadState.start    = Ps3.data.button.start;
+    gamepadState.ps       = Ps3.data.button.ps;
 
     // == 2. Membaca Nilai Analog dari Tombol (Pressure Sensitive) ==
-    gamepad_state.analog_cross    = Ps3.data.analog.button.cross;
-    gamepad_state.analog_square   = Ps3.data.analog.button.square;
-    gamepad_state.analog_triangle = Ps3.data.analog.button.triangle;
-    gamepad_state.analog_circle   = Ps3.data.analog.button.circle;
-    gamepad_state.analog_up       = Ps3.data.analog.button.up;
-    gamepad_state.analog_right    = Ps3.data.analog.button.right;
-    gamepad_state.analog_down     = Ps3.data.analog.button.down;
-    gamepad_state.analog_left     = Ps3.data.analog.button.left;
-    gamepad_state.analog_l1       = Ps3.data.analog.button.l1;
-    gamepad_state.analog_l2       = Ps3.data.analog.button.l2;
-    gamepad_state.analog_r1       = Ps3.data.analog.button.r1;
-    gamepad_state.analog_r2       = Ps3.data.analog.button.r2;
+    gamepadState.analog_cross    = Ps3.data.analog.button.cross;
+    gamepadState.analog_square   = Ps3.data.analog.button.square;
+    gamepadState.analog_triangle = Ps3.data.analog.button.triangle;
+    gamepadState.analog_circle   = Ps3.data.analog.button.circle;
+    gamepadState.analog_up       = Ps3.data.analog.button.up;
+    gamepadState.analog_right    = Ps3.data.analog.button.right;
+    gamepadState.analog_down     = Ps3.data.analog.button.down;
+    gamepadState.analog_left     = Ps3.data.analog.button.left;
+    gamepadState.analog_l1       = Ps3.data.analog.button.l1;
+    gamepadState.analog_l2       = Ps3.data.analog.button.l2;
+    gamepadState.analog_r1       = Ps3.data.analog.button.r1;
+    gamepadState.analog_r2       = Ps3.data.analog.button.r2;
 
     // == 3. Membaca Joystick Analog ==
-    gamepad_state.stick_lx = Ps3.data.analog.stick.lx;
-    gamepad_state.stick_ly = Ps3.data.analog.stick.ly;
-    gamepad_state.stick_rx = Ps3.data.analog.stick.rx;
-    gamepad_state.stick_ry = Ps3.data.analog.stick.ry;
+    gamepadState.stick_lx = Ps3.data.analog.stick.lx;
+    gamepadState.stick_ly = Ps3.data.analog.stick.ly;
+    gamepadState.stick_rx = Ps3.data.analog.stick.rx;
+    gamepadState.stick_ry = Ps3.data.analog.stick.ry;
 
     // == 4. Membaca Sensor Gerak (Accelerometer & Gyroscope) ==
-    gamepad_state.accel_x = Ps3.data.sensor.accelerometer.x;
-    gamepad_state.accel_y = Ps3.data.sensor.accelerometer.y;
-    gamepad_state.accel_z = Ps3.data.sensor.accelerometer.z;
-    gamepad_state.gyro_z  = Ps3.data.sensor.gyroscope.z;
+    gamepadState.accel_x = Ps3.data.sensor.accelerometer.x;
+    gamepadState.accel_y = Ps3.data.sensor.accelerometer.y;
+    gamepadState.accel_z = Ps3.data.sensor.accelerometer.z;
+    gamepadState.gyro_z  = Ps3.data.sensor.gyroscope.z;
 
     // == 5. Memeriksa Status Baterai (contoh mengambil state pas nahan tombol PS) ==
     int batStatus = Ps3.data.status.battery;
     if (batStatus == ps3_status_battery_charging) {
-        gamepad_state.battery_status = "Charging";
+        gamepadState.battery_status = "Charging";
     } else if (batStatus == ps3_status_battery_high) {
-        gamepad_state.battery_status = "High";
+        gamepadState.battery_status = "High";
     } else if (batStatus == ps3_status_battery_full) {
-        gamepad_state.battery_status = "Full";
+        gamepadState.battery_status = "Full";
     } else if (batStatus == ps3_status_battery_low) {
-        gamepad_state.battery_status = "Low";
+        gamepadState.battery_status = "Low";
     } else if (batStatus == ps3_status_battery_dying) {
-        gamepad_state.battery_status = "Dying";
+        gamepadState.battery_status = "Dying";
     } else if (batStatus == ps3_status_battery_shutdown) {
-        gamepad_state.battery_status = "Shutdown";
+        gamepadState.battery_status = "Shutdown";
     } else {
-        gamepad_state.battery_status = "Unknown";
+        gamepadState.battery_status = "Unknown";
     }
 }
 
@@ -149,17 +149,17 @@ inline void printGamepadDebug() {
 
     // Contoh menampilkan beberapa nilai stik ke serial monitor
     Serial.printf("LX: %d, LY: %d | RX: %d, RY: %d | L2 Analog: %d | R2 Analog: %d | Bat: %s\n",
-        gamepad_state.stick_lx,
-        gamepad_state.stick_ly,
-        gamepad_state.stick_rx,
-        gamepad_state.stick_ry,
-        gamepad_state.analog_l2,
-        gamepad_state.analog_r2,
-        gamepad_state.battery_status.c_str()
+        gamepadState.stick_lx,
+        gamepadState.stick_ly,
+        gamepadState.stick_rx,
+        gamepadState.stick_ry,
+        gamepadState.analog_l2,
+        gamepadState.analog_r2,
+        gamepadState.battery_status.c_str()
     );
 
     // Contoh cek apakah R1 ditekan
-    if (gamepad_state.r1) {
+    if (gamepadState.r1) {
         Serial.println(">> Tombol R1 Sedang Ditekan!");
     }
 

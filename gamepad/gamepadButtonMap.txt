@@ -1,0 +1,18 @@
+Axis 0: Left Joystick X             = Rotate Right (Right/Left)
+Axis 1: Left Joystick Y (inv)       = 
+Axis 2: Right Joystick X            = Strafe (Right/Left)
+Axis 3: Right Joystick Y (inv)      = Forward/Backward
+
+Button 0: X                         = 
+Button 1: A                         = 
+Button 2: B                         = 
+Button 3: Y                         = Shoot
+Button 4: Left Bumper               = 
+Button 5: Right Bumper              =
+Button 6: Left Trigger              =
+Button 7: Right Trigger             =
+Button 8: Back                      =
+Button 9: Start                     =
+Button 10: Left Joystick (click)    =
+Button 11: Right Joystick (click)   =
+Hat: Directional Pad (X, Y)         =
