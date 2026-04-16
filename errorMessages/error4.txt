@@ -1,0 +1,14 @@
+src\nano\main.cpp:26:31: error: no matching function for call to 'BuzzerMusic::BuzzerMusic(Pins::buzzer&)'
+ BuzzerMusic buzzer(pins.buzzer);
+                               ^
+In file included from src\nano\main.cpp:9:0:
+include/buzzerRunner.h:102:5: note: candidate: BuzzerMusic::BuzzerMusic(int)
+     BuzzerMusic(int pin) {
+     ^~~~~~~~~~~
+include/buzzerRunner.h:102:5: note:   no known conversion for argument 1 from 'Pins::buzzer' to 'int'
+include/buzzerRunner.h:96:7: note: candidate: constexpr BuzzerMusic::BuzzerMusic(const BuzzerMusic&)
+ class BuzzerMusic {
+       ^~~~~~~~~~~
+include/buzzerRunner.h:96:7: note:   no known conversion for argument 1 from 'Pins::buzzer' to 'const BuzzerMusic&'
+include/buzzerRunner.h:96:7: note: candidate: constexpr BuzzerMusic::BuzzerMusic(BuzzerMusic&&)
+include/buzzerRunner.h:96:7: note:   no known conversion for argument 1 from 'Pins::buzzer' to 'BuzzerMusic&&'

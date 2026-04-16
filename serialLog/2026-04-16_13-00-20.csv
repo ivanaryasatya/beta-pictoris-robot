@@ -1,0 +1,243 @@
+Waktu PC,Waktu MCU (ms),Perangkat,Jenis Komunikasi,Pesan
+13:00:20.244,N/A,Unknown,RX,ets Jul 29 2019 12:21:46
+13:00:20.249,N/A,Unknown,RX,"rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)"
+13:00:20.252,N/A,Unknown,RX,"configsip: 0, SPIWP:0xee"
+13:00:20.258,N/A,Unknown,RX,"clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00"
+13:00:20.260,N/A,Unknown,RX,"mode:DIO, clock div:2"
+13:00:20.262,N/A,Unknown,RX,"load:0x3fff0030,len:1184"
+13:00:20.264,N/A,Unknown,RX,"load:0x40078000,len:13232"
+13:00:20.267,N/A,Unknown,RX,"load:0x40080400,len:3028"
+13:00:20.269,N/A,Unknown,RX,entry 0x400805e4
+13:00:21.293,N/A,Unknown,RX,[INFO] Gamepad Controller Diinisialisasi. Menunggu koneksi PS3 di MAC: 00:70:07:26:53:2E
+13:00:21.717,1003,ESP32,RX,Loop rate core1: 130 Hz
+13:00:22.719,2005,ESP32,RX,Loop rate core1: 143 Hz
+13:00:22.721,2005,ESP32,RX,core 1 is alive
+13:00:22.726,2014,ESP32,RX,core 0 is alive
+13:00:23.719,3005,ESP32,RX,Loop rate core1: 143 Hz
+13:00:24.719,4005,ESP32,RX,Loop rate core1: 143 Hz
+13:00:24.721,4005,ESP32,RX,core 1 is alive
+13:00:24.736,4024,ESP32,RX,core 0 is alive
+13:00:25.720,5006,ESP32,RX,Loop rate core1: 143 Hz
+13:00:26.721,6007,ESP32,RX,Loop rate core1: 143 Hz
+13:00:26.723,6007,ESP32,RX,core 1 is alive
+13:00:26.746,6034,ESP32,RX,core 0 is alive
+13:00:27.721,7007,ESP32,RX,Loop rate core1: 143 Hz
+13:00:28.721,8007,ESP32,RX,Loop rate core1: 143 Hz
+13:00:28.723,8007,ESP32,RX,core 1 is alive
+13:00:28.756,8044,ESP32,RX,core 0 is alive
+13:00:29.721,9007,ESP32,RX,Loop rate core1: 143 Hz
+13:00:30.722,10008,ESP32,RX,Loop rate core1: 143 Hz
+13:00:30.724,10008,ESP32,RX,core 1 is alive
+13:00:30.766,10054,ESP32,RX,core 0 is alive
+13:00:31.723,11009,ESP32,RX,Loop rate core1: 143 Hz
+13:00:32.723,12009,ESP32,RX,Loop rate core1: 143 Hz
+13:00:32.726,12009,ESP32,RX,core 1 is alive
+13:00:32.776,12064,ESP32,RX,core 0 is alive
+13:00:33.723,13009,ESP32,RX,Loop rate core1: 143 Hz
+13:00:34.724,14010,ESP32,RX,Loop rate core1: 143 Hz
+13:00:34.726,14010,ESP32,RX,core 1 is alive
+13:00:34.786,14074,ESP32,RX,core 0 is alive
+13:00:35.724,15010,ESP32,RX,Loop rate core1: 143 Hz
+13:00:36.725,16011,ESP32,RX,Loop rate core1: 143 Hz
+13:00:36.727,16011,ESP32,RX,core 1 is alive
+13:00:36.796,16084,ESP32,RX,core 0 is alive
+13:00:37.725,17011,ESP32,RX,Loop rate core1: 143 Hz
+13:00:38.726,18012,ESP32,RX,Loop rate core1: 143 Hz
+13:00:38.728,18012,ESP32,RX,core 1 is alive
+13:00:38.806,18094,ESP32,RX,core 0 is alive
+13:00:39.726,19012,ESP32,RX,Loop rate core1: 143 Hz
+13:00:40.726,20012,ESP32,RX,Loop rate core1: 143 Hz
+13:00:40.728,20012,ESP32,RX,core 1 is alive
+13:00:40.817,20104,ESP32,RX,core 0 is alive
+13:00:41.726,21013,ESP32,RX,Loop rate core1: 143 Hz
+13:00:42.727,22013,ESP32,RX,Loop rate core1: 143 Hz
+13:00:42.729,22013,ESP32,RX,core 1 is alive
+13:00:42.826,22114,ESP32,RX,core 0 is alive
+13:00:43.727,23014,ESP32,RX,Loop rate core1: 143 Hz
+13:00:44.728,24014,ESP32,RX,Loop rate core1: 143 Hz
+13:00:44.730,24014,ESP32,RX,core 1 is alive
+13:00:44.836,24124,ESP32,RX,core 0 is alive
+13:00:45.727,25014,ESP32,RX,Loop rate core1: 143 Hz
+13:00:46.728,26015,ESP32,RX,Loop rate core1: 143 Hz
+13:00:46.730,26015,ESP32,RX,core 1 is alive
+13:00:46.846,26134,ESP32,RX,core 0 is alive
+13:00:47.730,27016,ESP32,RX,Loop rate core1: 143 Hz
+13:00:48.730,28016,ESP32,RX,Loop rate core1: 143 Hz
+13:00:48.732,28016,ESP32,RX,core 1 is alive
+13:00:48.856,28144,ESP32,RX,core 0 is alive
+13:00:49.732,29018,ESP32,RX,Loop rate core1: 143 Hz
+13:00:50.734,30020,ESP32,RX,Loop rate core1: 143 Hz
+13:00:50.736,30021,ESP32,RX,core 1 is alive
+13:00:50.866,30154,ESP32,RX,core 0 is alive
+13:00:51.735,31022,ESP32,RX,Loop rate core1: 143 Hz
+13:00:52.738,32024,ESP32,RX,Loop rate core1: 143 Hz
+13:00:52.740,32025,ESP32,RX,core 1 is alive
+13:00:52.876,32164,ESP32,RX,core 0 is alive
+13:00:53.738,33025,ESP32,RX,Loop rate core1: 143 Hz
+13:00:54.741,34027,ESP32,RX,Loop rate core1: 143 Hz
+13:00:54.743,34028,ESP32,RX,core 1 is alive
+13:00:54.886,34174,ESP32,RX,core 0 is alive
+13:00:55.742,35029,ESP32,RX,Loop rate core1: 143 Hz
+13:00:56.743,36030,ESP32,RX,Loop rate core1: 143 Hz
+13:00:56.746,36030,ESP32,RX,core 1 is alive
+13:00:56.896,36184,ESP32,RX,core 0 is alive
+13:00:57.743,37030,ESP32,RX,Loop rate core1: 143 Hz
+13:00:58.744,38030,ESP32,RX,Loop rate core1: 143 Hz
+13:00:58.746,38031,ESP32,RX,core 1 is alive
+13:00:58.906,38194,ESP32,RX,core 0 is alive
+13:00:59.745,39032,ESP32,RX,Loop rate core1: 143 Hz
+13:01:00.747,40034,ESP32,RX,Loop rate core1: 143 Hz
+13:01:00.754,40035,ESP32,RX,core 1 is alive
+13:01:00.916,40204,ESP32,RX,core 0 is alive
+13:01:01.750,41036,ESP32,RX,Loop rate core1: 143 Hz
+13:01:02.752,42038,ESP32,RX,Loop rate core1: 143 Hz
+13:01:02.754,42039,ESP32,RX,core 1 is alive
+13:01:02.926,42214,ESP32,RX,core 0 is alive
+13:01:03.753,43039,ESP32,RX,Loop rate core1: 143 Hz
+13:01:04.754,44041,ESP32,RX,Loop rate core1: 143 Hz
+13:01:04.756,44042,ESP32,RX,core 1 is alive
+13:01:04.936,44224,ESP32,RX,core 0 is alive
+13:01:05.756,45043,ESP32,RX,Loop rate core1: 143 Hz
+13:01:06.758,46044,ESP32,RX,Loop rate core1: 143 Hz
+13:01:06.760,46045,ESP32,RX,core 1 is alive
+13:01:06.946,46234,ESP32,RX,core 0 is alive
+13:01:07.759,47046,ESP32,RX,Loop rate core1: 143 Hz
+13:01:08.761,48048,ESP32,RX,Loop rate core1: 143 Hz
+13:01:08.763,48049,ESP32,RX,core 1 is alive
+13:01:08.956,48244,ESP32,RX,core 0 is alive
+13:01:09.763,49050,ESP32,RX,Loop rate core1: 143 Hz
+13:01:10.766,50052,ESP32,RX,Loop rate core1: 143 Hz
+13:01:10.767,50053,ESP32,RX,core 1 is alive
+13:01:10.966,50254,ESP32,RX,core 0 is alive
+13:01:11.766,51053,ESP32,RX,Loop rate core1: 143 Hz
+13:01:12.768,52055,ESP32,RX,Loop rate core1: 143 Hz
+13:01:12.771,52056,ESP32,RX,core 1 is alive
+13:01:12.976,52264,ESP32,RX,core 0 is alive
+13:01:13.770,53057,ESP32,RX,Loop rate core1: 143 Hz
+13:01:14.772,54059,ESP32,RX,Loop rate core1: 143 Hz
+13:01:14.774,54060,ESP32,RX,core 1 is alive
+13:01:14.986,54274,ESP32,RX,core 0 is alive
+13:01:15.774,55061,ESP32,RX,Loop rate core1: 143 Hz
+13:01:16.775,56062,ESP32,RX,Loop rate core1: 143 Hz
+13:01:16.777,56063,ESP32,RX,core 1 is alive
+13:01:16.996,56284,ESP32,RX,core 0 is alive
+13:01:17.777,57064,ESP32,RX,Loop rate core1: 143 Hz
+13:01:18.779,58066,ESP32,RX,Loop rate core1: 143 Hz
+13:01:18.781,58067,ESP32,RX,core 1 is alive
+13:01:19.006,58294,ESP32,RX,core 0 is alive
+13:01:19.780,59067,ESP32,RX,Loop rate core1: 143 Hz
+13:01:20.783,60069,ESP32,RX,Loop rate core1: 143 Hz
+13:01:20.785,60070,ESP32,RX,core 1 is alive
+13:01:21.016,60304,ESP32,RX,core 0 is alive
+13:01:21.784,61071,ESP32,RX,Loop rate core1: 143 Hz
+13:01:22.786,62073,ESP32,RX,Loop rate core1: 143 Hz
+13:01:22.789,62074,ESP32,RX,core 1 is alive
+13:01:23.026,62314,ESP32,RX,core 0 is alive
+13:01:23.788,63075,ESP32,RX,Loop rate core1: 143 Hz
+13:01:24.789,64076,ESP32,RX,Loop rate core1: 143 Hz
+13:01:24.792,64077,ESP32,RX,core 1 is alive
+13:01:25.036,64324,ESP32,RX,core 0 is alive
+13:01:25.791,65078,ESP32,RX,Loop rate core1: 143 Hz
+13:01:26.793,66080,ESP32,RX,Loop rate core1: 143 Hz
+13:01:26.795,66081,ESP32,RX,core 1 is alive
+13:01:27.046,66334,ESP32,RX,core 0 is alive
+13:01:27.795,67082,ESP32,RX,Loop rate core1: 143 Hz
+13:01:28.797,68084,ESP32,RX,Loop rate core1: 143 Hz
+13:01:28.799,68085,ESP32,RX,core 1 is alive
+13:01:29.056,68344,ESP32,RX,core 0 is alive
+13:01:29.798,69085,ESP32,RX,Loop rate core1: 143 Hz
+13:01:30.800,70087,ESP32,RX,Loop rate core1: 143 Hz
+13:01:30.803,70088,ESP32,RX,core 1 is alive
+13:01:31.066,70354,ESP32,RX,core 0 is alive
+13:01:31.802,71089,ESP32,RX,Loop rate core1: 143 Hz
+13:01:32.804,72091,ESP32,RX,Loop rate core1: 143 Hz
+13:01:32.806,72092,ESP32,RX,core 1 is alive
+13:01:33.076,72364,ESP32,RX,core 0 is alive
+13:01:33.806,73094,ESP32,RX,Loop rate core1: 143 Hz
+13:01:34.808,74094,ESP32,RX,Loop rate core1: 143 Hz
+13:01:34.810,74095,ESP32,RX,core 1 is alive
+13:01:35.086,74374,ESP32,RX,core 0 is alive
+13:01:35.810,75097,ESP32,RX,Loop rate core1: 143 Hz
+13:01:36.812,76099,ESP32,RX,Loop rate core1: 143 Hz
+13:01:36.814,76100,ESP32,RX,core 1 is alive
+13:01:37.095,76384,ESP32,RX,core 0 is alive
+13:01:37.814,77101,ESP32,RX,Loop rate core1: 143 Hz
+13:01:38.816,78103,ESP32,RX,Loop rate core1: 143 Hz
+13:01:38.818,78104,ESP32,RX,core 1 is alive
+13:01:39.105,78394,ESP32,RX,core 0 is alive
+13:01:39.818,79105,ESP32,RX,Loop rate core1: 143 Hz
+13:01:40.820,80107,ESP32,RX,Loop rate core1: 143 Hz
+13:01:40.822,80108,ESP32,RX,core 1 is alive
+13:01:41.115,80404,ESP32,RX,core 0 is alive
+13:01:41.822,81109,ESP32,RX,Loop rate core1: 143 Hz
+13:01:42.824,82111,ESP32,RX,Loop rate core1: 143 Hz
+13:01:42.826,82112,ESP32,RX,core 1 is alive
+13:01:43.125,82414,ESP32,RX,core 0 is alive
+13:01:43.825,83112,ESP32,RX,Loop rate core1: 143 Hz
+13:01:44.827,84114,ESP32,RX,Loop rate core1: 143 Hz
+13:01:44.829,84115,ESP32,RX,core 1 is alive
+13:01:45.136,84424,ESP32,RX,core 0 is alive
+13:01:45.829,85116,ESP32,RX,Loop rate core1: 143 Hz
+13:01:46.830,86117,ESP32,RX,Loop rate core1: 143 Hz
+13:01:46.833,86118,ESP32,RX,core 1 is alive
+13:01:47.145,86434,ESP32,RX,core 0 is alive
+13:01:47.832,87119,ESP32,RX,Loop rate core1: 143 Hz
+13:01:48.834,88121,ESP32,RX,Loop rate core1: 143 Hz
+13:01:48.836,88122,ESP32,RX,core 1 is alive
+13:01:49.156,88444,ESP32,RX,core 0 is alive
+13:01:49.836,89123,ESP32,RX,Loop rate core1: 143 Hz
+13:01:50.838,90125,ESP32,RX,Loop rate core1: 143 Hz
+13:01:50.840,90126,ESP32,RX,core 1 is alive
+13:01:51.165,90454,ESP32,RX,core 0 is alive
+13:01:51.840,91127,ESP32,RX,Loop rate core1: 143 Hz
+13:01:52.842,92129,ESP32,RX,Loop rate core1: 143 Hz
+13:01:52.844,92130,ESP32,RX,core 1 is alive
+13:01:53.175,92464,ESP32,RX,core 0 is alive
+13:01:53.843,93130,ESP32,RX,Loop rate core1: 143 Hz
+13:01:54.845,94132,ESP32,RX,Loop rate core1: 143 Hz
+13:01:54.847,94133,ESP32,RX,core 1 is alive
+13:01:55.185,94474,ESP32,RX,core 0 is alive
+13:01:55.847,95134,ESP32,RX,Loop rate core1: 143 Hz
+13:01:56.848,96135,ESP32,RX,Loop rate core1: 143 Hz
+13:01:56.850,96136,ESP32,RX,core 1 is alive
+13:01:57.195,96484,ESP32,RX,core 0 is alive
+13:01:57.850,97137,ESP32,RX,Loop rate core1: 143 Hz
+13:01:58.852,98139,ESP32,RX,Loop rate core1: 143 Hz
+13:01:58.854,98140,ESP32,RX,core 1 is alive
+13:01:59.205,98494,ESP32,RX,core 0 is alive
+13:01:59.854,99141,ESP32,RX,Loop rate core1: 143 Hz
+13:02:00.856,100143,ESP32,RX,Loop rate core1: 143 Hz
+13:02:00.858,100144,ESP32,RX,core 1 is alive
+13:02:01.215,100504,ESP32,RX,core 0 is alive
+13:02:01.857,101144,ESP32,RX,Loop rate core1: 143 Hz
+13:02:02.859,102146,ESP32,RX,Loop rate core1: 143 Hz
+13:02:02.861,102147,ESP32,RX,core 1 is alive
+13:02:03.225,102514,ESP32,RX,core 0 is alive
+13:02:03.861,103148,ESP32,RX,Loop rate core1: 143 Hz
+13:02:04.862,104149,ESP32,RX,Loop rate core1: 143 Hz
+13:02:04.864,104150,ESP32,RX,core 1 is alive
+13:02:05.235,104524,ESP32,RX,core 0 is alive
+13:02:05.864,105151,ESP32,RX,Loop rate core1: 143 Hz
+13:02:06.866,106153,ESP32,RX,Loop rate core1: 143 Hz
+13:02:06.868,106154,ESP32,RX,core 1 is alive
+13:02:07.245,106534,ESP32,RX,core 0 is alive
+13:02:07.868,107155,ESP32,RX,Loop rate core1: 143 Hz
+13:02:08.870,108157,ESP32,RX,Loop rate core1: 143 Hz
+13:02:08.872,108158,ESP32,RX,core 1 is alive
+13:02:09.255,108544,ESP32,RX,core 0 is alive
+13:02:09.872,109159,ESP32,RX,Loop rate core1: 143 Hz
+13:02:10.874,110161,ESP32,RX,Loop rate core1: 143 Hz
+13:02:10.876,110162,ESP32,RX,core 1 is alive
+13:02:11.265,110554,ESP32,RX,core 0 is alive
+13:02:11.875,111162,ESP32,RX,Loop rate core1: 143 Hz
+13:02:12.877,112164,ESP32,RX,Loop rate core1: 143 Hz
+13:02:12.879,112165,ESP32,RX,core 1 is alive
+13:02:13.275,112564,ESP32,RX,core 0 is alive
+13:02:13.879,113166,ESP32,RX,Loop rate core1: 143 Hz
+13:02:14.880,114167,ESP32,RX,Loop rate core1: 143 Hz
+13:02:14.882,114168,ESP32,RX,core 1 is alive
+13:02:15.285,114574,ESP32,RX,core 0 is alive
+13:02:15.882,115169,ESP32,RX,Loop rate core1: 143 Hz
+13:02:16.884,116171,ESP32,RX,Loop rate core1: 143 Hz
+13:02:16.886,116172,ESP32,RX,core 1 is alive
+13:02:17.295,116584,ESP32,RX,core 0 is alive

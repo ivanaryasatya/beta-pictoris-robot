@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include "firebaseHandler.h"
+//#include "firebaseHandler.h"
 
 class Logger {
   private:
@@ -10,7 +10,11 @@ class Logger {
     bool rtdbSyncLog = false;
     bool BTlog = false;
     void startText() {
+#if defined(ESP32)
       Serial.print(F("E"));
+#else
+      Serial.print(F("N"));
+#endif
       Serial.print(millis());
       Serial.println(F("-"));
     }
@@ -50,7 +54,11 @@ class Logger {
         addLine(text);
       }
 
+#if defined(ESP32)
       Serial.print(F("E"));
+#else
+      Serial.print(F("N"));
+#endif
       Serial.print(millis());
       Serial.print(F("-"));
 

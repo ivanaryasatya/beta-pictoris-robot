@@ -1,0 +1,27 @@
+Waktu PC,Waktu MCU (ms),Perangkat,Jenis Komunikasi,Pesan
+12:48:12.509,N/A,Unknown,RX,ets Jul 29 2019 12:21:46
+12:48:12.513,N/A,Unknown,RX,"rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)"
+12:48:12.516,N/A,Unknown,RX,"configsip: 0, SPIWP:0xee"
+12:48:12.523,N/A,Unknown,RX,"clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00"
+12:48:12.525,N/A,Unknown,RX,"mode:DIO, clock div:2"
+12:48:12.526,N/A,Unknown,RX,"load:0x3fff0030,len:1184"
+12:48:12.529,N/A,Unknown,RX,"load:0x40078000,len:13232"
+12:48:12.531,N/A,Unknown,RX,"load:0x40080400,len:3028"
+12:48:12.532,N/A,Unknown,RX,entry 0x400805e4
+12:48:13.573,N/A,Unknown,RX,[INFO] Gamepad Controller Diinisialisasi. Menunggu koneksi PS3 di MAC: 00:70:07:26:53:2E
+12:48:13.982,1004,ESP32,RX,Loop rate core1: 130 Hz
+12:48:14.977,2000,ESP32,RX,core 0 is alive
+12:48:14.984,2006,ESP32,RX,Loop rate core1: 143 Hz
+12:48:14.986,2006,ESP32,RX,core 1 is alive
+12:48:15.985,3007,ESP32,RX,Loop rate core1: 143 Hz
+12:48:16.986,4008,ESP32,RX,Loop rate core1: 143 Hz
+12:48:16.988,4008,ESP32,RX,core 1 is alive
+12:48:16.990,4010,ESP32,RX,core 0 is alive
+12:48:17.987,5009,ESP32,RX,Loop rate core1: 143 Hz
+12:48:18.988,6010,ESP32,RX,Loop rate core1: 143 Hz
+12:48:18.990,6010,ESP32,RX,core 1 is alive
+12:48:18.997,6020,ESP32,RX,core 0 is alive
+12:48:19.988,7010,ESP32,RX,Loop rate core1: 143 Hz
+12:48:20.989,8010,ESP32,RX,Loop rate core1: 143 Hz
+12:48:20.991,8010,ESP32,RX,core 1 is alive
+12:48:21.007,8030,ESP32,RX,core 0 is alive

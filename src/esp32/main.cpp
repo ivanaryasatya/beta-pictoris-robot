@@ -54,6 +54,7 @@ byte gmpDeadZone = 2;
 int test = 0;
 bool serialLogState = true;
 bool gamepadIsConnected = false;
+unsigned int nanoPing = 0;
 
 // Command parsing
 String target, command, value[16];
@@ -70,8 +71,9 @@ bool is_rumble_burst_active = false;
 const unsigned long RUMBLE_BURST_DURATION = 200;
 const char* spaceStr = " ";
 int espResetTimer = -1;
-unsigned long lastPingMillis = 0;
-unsigned long lastPongReceived = 0;
+unsigned long lastPingMicros = 0;
+unsigned long lastPongReceivedMicros = 0;
+const unsigned long pingInterval = 500000; // us
 
 MotorDriver motor(pins.wheelDriver_r.ENA, pins.wheelDriver_r.IN1, pins.wheelDriver_r.IN2, pins.wheelDriver_r.IN3, pins.wheelDriver_r.IN4, pins.wheelDriver_r.ENB);
 MotorDriver motor2(pins.wheelDriver_l.ENA, pins.wheelDriver_l.IN1, pins.wheelDriver_l.IN2, pins.wheelDriver_l.IN3, pins.wheelDriver_l.IN4, pins.wheelDriver_l.ENB);
@@ -277,11 +279,12 @@ void uartCommandRun(byte uartCmd, byte id, byte *data, byte len) {
     if (uartCmd == uart.mapId.PING) {
         uart.send(uart.mapId.PONG, 0, NULL);
     } else if (uartCmd == uart.mapId.PONG) {
-        lastPongReceived = millis();
+        lastPongReceivedMicros = micros();
+        nanoPing = lastPongReceivedMicros - lastPingMicros;
     } else if (uartCmd == uart.mapId.RESTART) {
         espResetTimer = data[0] * 1000;
     } else if (uartCmd == uart.mapId.USER_CMD) {
-        
+
     } else if (uartCmd == uart.mapId.irSensor.CATCHER) {
         sensorState.ir.catcher = state.num(data[0]);
     } else if (uartCmd == uart.mapId.irSensor.DROP_POINT) {
@@ -371,6 +374,12 @@ bool commandRun(const String &target, const String &command, const String value[
     } else if (target == F("nano")) {
         if (command == F("sendCommand") && valueCount >= 1) {
             uart.send(uart.mapId.USER_CMD, 0, (byte*)value[0].c_str());
+        } else if (command == F("ping")) {
+            slog.add(F("NANO ping: "));
+            slog.add(String(nanoPing));
+            slog.add(F(" us"));
+            slog.println();
+        
         }
     } else if (target == F("gmp")) {
         if (command == F("battery")) {
@@ -435,8 +444,8 @@ void mainFunction(void *pvParameters) {
         uart.update();
 
         // Ping Nano setiap 500ms
-        if (millis() - lastPingMillis >= 500) {
-            lastPingMillis = millis();
+        if (micros() - lastPingMicros >= pingInterval) { // 500000 mikrodetik = 500 ms
+            lastPingMicros = micros();
             uart.send(uart.mapId.PING, 0, NULL);
         }
 
@@ -537,7 +546,7 @@ void mainFunction(void *pvParameters) {
             cmdMaxValue = sizeof(value) / sizeof(value[0]);
             
             parseCmd(serialInput, target, command, value, cmdMaxValue, cmdValueCount);
-            
+
             slog.println("Received serial input: " + serialInput);
             slog.println("Hasil Parsing -> target: " + target + " | command: " + command + " | value: " + value[0]);
             

@@ -5,6 +5,9 @@
 #include "irSensor.h"
 #include "hallSensor.h"
 #include "ultrasonicSensor.h"
+#include "serialLogger.h"
+#include "buzzerRunner.h"
+#include "buzzerMelody.h"
 
 UARTProtocol uart(Serial);
 
@@ -19,6 +22,8 @@ TCRT5000Analog irDropPoint(pins.irSensor.dropPoint, 800);
 TCRT5000Analog irShoot(pins.irSensor.shoot, 800);
 TCRT5000Analog irSpeedMotorRight(pins.irSensor.speedMotorRight, 800);
 TCRT5000Analog irSpeedMotorLeft(pins.irSensor.speedMotorLeft, 800);
+
+BuzzerMusic buzzer(pins.buzzer.buzzerPin); // Akses variabel angka pin di dalam struct buzzer
 
 UltrasonicSensor ultrasonic;
 
@@ -102,6 +107,8 @@ void setup() {
   rHallSensor.begin();
   lHallSensor.begin();
   ultrasonic.init(pins.ultrasonicSensor.trig, pins.ultrasonicSensor.echo);
+
+  buzzer.play(melody.startup, 8, 100);
 }
 
 void loop() {
@@ -130,7 +137,10 @@ void loop() {
   }
   // --------------------------------------------------------
 
-  if (irCather.isDetected()) {
+  static bool lastCatcherState = false;
+  bool currentCatcherState = irCather.isDetected();
+  if (currentCatcherState && !lastCatcherState) {
     uart.send(uart.mapId.irSensor.CATCHER, 0, NULL);
   }
+  lastCatcherState = currentCatcherState;
 }

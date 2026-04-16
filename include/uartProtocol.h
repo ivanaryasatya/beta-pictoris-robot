@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include "serialLogger.h"
 using cbyte = const byte;
 cbyte UART_MAX_DATA = 32;
 cbyte v = 'a';
@@ -119,6 +120,7 @@ struct MapId {
 
     _lastID = _packetID;
     _packetID++;
+    slog.println(F("UART sent"));
   }
 
   void update() {
