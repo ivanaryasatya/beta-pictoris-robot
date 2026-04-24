@@ -3,16 +3,21 @@ Axis 1: Left Joystick Y (inv)       = Set Barrel Angle (Up/Down)
 Axis 2: Right Joystick X            = Strafe (move Right/Left)
 Axis 3: Right Joystick Y (inv)      = Forward/Backward
 
-Button 0: X                         = Led bumper Right & Left
-Button 1: A                         = emergency mode (ON/OFF)
-Button 2: B                         = buzzer (klakson)
-Button 3: Y                         = Reload Megazine
-Button 4: Left Bumper               = 
-Button 5: Right Bumper              =
+Button 0: X (Cross)                 = Shoot
+Button 1: A (Square)                = buzzer (klakson)
+Button 2: B (Circle)                = Reload Megazine
+Button 3: Y (Triangle)              = Predicted shoot
+Button 4: Left Bumper               = Laser (ON/OFF)
+Button 5: Right Bumper              = Led bumper Right & Left
 Button 6: Left Trigger              =
-Button 7: Right Trigger             = Shoot
-Button 8: Back                      =
-Button 9: Start                     =
+Button 7: Right Trigger             = 
+Button 8: Select                    = select sequence
+Button 9: Start                     = start selected sequence
+button 10: Left Joystick Button     =
+button 11: Right Joystick Button    =
+button 12: PS button                = Emergency Mode
+
+
 Hat: Directional Pad X              = Rotate Megazine (rotate L/R)
 Hat: Directional Pad Y              = Flywheel speed (up/down)
 

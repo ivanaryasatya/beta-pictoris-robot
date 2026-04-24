@@ -22,7 +22,7 @@
 
 
 const byte dataId[] = {
-  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06
+  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
 };
 
 using cchar = const char;
@@ -35,5 +35,6 @@ class EEPROMPointer {
     cchar userPassword =    dataId[4];
     cchar databaseURL =     dataId[5];
     cchar logState =        dataId[6];
+    cchar emergencyState =  dataId[7];
 };
 EEPROMPointer epmPtr;

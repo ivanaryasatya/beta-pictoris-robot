@@ -10,6 +10,8 @@ from datetime import datetime
 # System Terminal Variables untuk non-blocking input
 print_lock = threading.Lock()
 current_input = ""
+ser = None
+is_connected = False
 
 def safe_print(msg):
     global current_input
@@ -45,11 +47,25 @@ def write_to_csv(file_path, time, mcu_time, device, msg_type, content):
         writer = csv.writer(f)
         writer.writerow([time, mcu_time, device, msg_type, content])
 
-def rx_thread(ser, log_file):
-    """Thread untuk menangani data masuk (RX)"""
-    while ser.is_open:
+def rx_thread(port, baudrate, log_file):
+    """Thread untuk menjaga koneksi dan menangani data masuk (RX)"""
+    global ser, is_connected
+    while True:
+        if not is_connected:
+            try:
+                ser = serial.Serial(port, baudrate, timeout=1)
+                is_connected = True
+                msg = f"[SYSTEM] BERHASIL tersambung ke {port} @ {baudrate} bps."
+                if os.name == 'nt':
+                    safe_print(msg)
+                else:
+                    print(f"\r{msg}\n>> ", end="", flush=True)
+            except serial.SerialException:
+                time.sleep(2)
+                continue
+
         try:
-            if ser.in_waiting > 0:
+            if ser and ser.in_waiting > 0:
                 raw_data = ser.readline().decode('utf-8', errors='replace').strip()
                 if raw_data:
                     timestamp = get_timestamp_full()
@@ -87,9 +103,16 @@ def rx_thread(ser, log_file):
                         print(">> ", end="", flush=True)
                     # --- Catat ke CSV ---
                     write_to_csv(log_file, timestamp, mcu_time, device, "RX", payload)
-        except Exception as e:
-            print(f"\n[ERROR RX]: {e}")
-            break
+        except (serial.SerialException, OSError, AttributeError):
+            is_connected = False
+            msg = "[SYSTEM] KONEKSI TERPUTUS! Mencoba menyambung kembali..."
+            if os.name == 'nt':
+                safe_print(msg)
+            else:
+                print(f"\r{msg}\n>> ", end="", flush=True)
+            if ser:
+                ser.close()
+            time.sleep(1)
 
 def main():
     print("=== Python Serial Terminal & CSV Logger ===")
@@ -110,10 +133,7 @@ def main():
     baudrate = int(baud_input) if baud_input else 115200
 
     try:
-        # Mencoba membuka koneksi
-        ser = serial.Serial(port, baudrate, timeout=1)
-        
-        # Buat file CSV baru saat koneksi berhasil
+        # Buat file CSV baru saat program dimulai
         file_name = f"{get_filename_timestamp()}.csv"
         full_log_path = os.path.join(LOG_DIR, file_name)
         
@@ -122,12 +142,12 @@ def main():
             writer = csv.writer(f)
             writer.writerow(["Waktu PC", "Waktu MCU (ms)", "Perangkat", "Jenis Komunikasi", "Pesan"])
         
-        print(f"\n[SYSTEM] Terhubung ke {port}")
+        print(f"\n[SYSTEM] Mencari {port}... (Program tidak akan berhenti jika terputus)")
         print(f"[SYSTEM] Logging ke: {full_log_path}")
         print("[SYSTEM] Ketik pesan lalu Enter. Ketik 'exit' untuk keluar.\n")
 
-        # Jalankan thread pembaca (RX)
-        thread = threading.Thread(target=rx_thread, args=(ser, full_log_path), daemon=True)
+        # Jalankan thread pembaca (RX) & penjaga koneksi
+        thread = threading.Thread(target=rx_thread, args=(port, baudrate, full_log_path), daemon=True)
         thread.start()
 
         # Loop utama pengirim (TX)
@@ -153,11 +173,17 @@ def main():
                             break
                         
                         if tx_data:
-                            ser.write((tx_data + '\n').encode('utf-8'))
-                            timestamp = get_timestamp_full()
-                            msg = f"[{timestamp}] [TX] Sent: {tx_data}"
-                            safe_print(msg)
-                            write_to_csv(full_log_path, timestamp, "N/A", "PC", "TX", tx_data)
+                            if is_connected and ser and ser.is_open:
+                                try:
+                                    ser.write((tx_data + '\n').encode('utf-8'))
+                                    timestamp = get_timestamp_full()
+                                    msg = f"[{timestamp}] [TX] Sent: {tx_data}"
+                                    safe_print(msg)
+                                    write_to_csv(full_log_path, timestamp, "N/A", "PC", "TX", tx_data)
+                                except (serial.SerialException, OSError):
+                                    safe_print("[SYSTEM] Gagal mengirim data. Koneksi terputus!")
+                            else:
+                                safe_print("[SYSTEM] Tidak ada koneksi. Data tidak terkirim.")
                         else:
                             with print_lock:
                                 sys.stdout.write(">> ")
@@ -191,17 +217,21 @@ def main():
                     break
                 
                 if tx_data:
-                    ser.write((tx_data + '\n').encode('utf-8'))
-                    timestamp = get_timestamp_full()
-                    print(f"[{timestamp}] [TX] Sent: {tx_data}")
-                    write_to_csv(full_log_path, timestamp, "N/A", "PC", "TX", tx_data)
+                    if is_connected and ser and ser.is_open:
+                        try:
+                            ser.write((tx_data + '\n').encode('utf-8'))
+                            timestamp = get_timestamp_full()
+                            print(f"[{timestamp}] [TX] Sent: {tx_data}")
+                            write_to_csv(full_log_path, timestamp, "N/A", "PC", "TX", tx_data)
+                        except (serial.SerialException, OSError):
+                            print("[SYSTEM] Gagal mengirim data. Koneksi terputus!")
+                    else:
+                        print("[SYSTEM] Tidak ada koneksi. Data tidak terkirim.")
 
-    except serial.SerialException as e:
-        print(f"[ERROR] Gagal akses {port}: {e}")
     except KeyboardInterrupt:
         print(f"\n[SYSTEM] Menutup koneksi...")
     finally:
-        if 'ser' in locals() and ser.is_open:
+        if ser and ser.is_open:
             ser.close()
         print("[SYSTEM] Selesai.")
 

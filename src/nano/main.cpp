@@ -41,13 +41,8 @@ byte numReturn(const bool value) {
 void(* NanoRestart) (void) = 0;
 int counter = 1;
 
-// --- Variabel Global Kalkulasi RPM ---
-unsigned long lastRpmTime = 0;
-volatile int rightPulseCount = 0;
-volatile int leftPulseCount = 0;
-bool lastRightState = false;
-bool lastLeftState = false;
-const int ENCODER_HOLES = 20; // Sesuaikan dengan jumlah lubang/garis pada piringan encoder Anda
+// --- Konstanta Kalkulasi RPM ---
+const int ENCODER_HOLES = 1;
 
 bool emergencyState = false;
 
@@ -66,7 +61,7 @@ struct SensorState {
     float speedMotorRight = 0;
     float speedMotorLeft = 0;
     float rightRpm = 0.0;
-float leftRpm = 0.0;
+    float leftRpm = 0.0;
   } ir;
   
   struct Hall {
@@ -88,9 +83,34 @@ void mosfetDriver(const byte pin, const unsigned int speed) {
   if (speed > 0) {
     currentSpeed = constrain(speed, 0, 255);
     analogWrite(pin, currentSpeed);
+    analogWrite(pin, constrain(speed, 0, 255));
   } else {
     analogWrite(pin, 0);
   }
+}
+
+float readMotorRPM(TCRT5000Analog& sensor) {
+  unsigned long startRpmTime = millis();
+  byte samples = 0;
+  unsigned long dt = 0;
+  bool lastState = sensor.isDetected();
+
+  while (millis() - startRpmTime < 200) {
+    bool currState = sensor.isDetected();
+    if (currState && !lastState) {
+      samples++;
+      if (samples == 5) {
+        dt = millis() - startRpmTime;
+        break; // Keluar seketika jika sudah 5 sample
+      }
+    }
+    lastState = currState;
+  }
+
+  if (samples < 5) dt = millis() - startRpmTime;
+
+  if (samples < 1 || dt == 0) return 0.0;
+  return (float)samples * 3000.0 / dt;
 }
 
 /**
@@ -108,7 +128,7 @@ float temSensorRead(const bool isTemperature = true) {
   }
 
   if (isnan(data)) {
-    slog.println(F("Failed to read from DHT sensor"));
+    slog.println(F("DHT Failure"));
     return 0;
   } else {
     return data;
@@ -123,7 +143,7 @@ void uartCommand(byte cmd, byte id, byte *data, byte len) {
     uart.send(uart.mapId.PONG, 0, NULL);
 
   //emergency mode
-  } else if (cmd == uart.mapId.emergencyMode) {
+  } else if (cmd == uart.mapId.EMERGENCY_MODE) {
     emergencyState = (data[0] == 1);
     if (emergencyState) {
       // Hentikan total semua penggerak
@@ -135,7 +155,6 @@ void uartCommand(byte cmd, byte id, byte *data, byte len) {
       digitalWrite(pins.led.laser, LOW);
       digitalWrite(pins.led.bumper.left, LOW);
       digitalWrite(pins.led.bumper.right, LOW);
-      slog.println(F("NANO: EMERGENCY MODE ACTIVATED"));
     }
 
   // Restart
@@ -170,8 +189,10 @@ void uartCommand(byte cmd, byte id, byte *data, byte len) {
     byte val = irShoot.isDetected() ? 1 : 0;
     uart.send(uart.mapId.irSensor.SHOOT, 1, &val);
   } else if (cmd == uart.mapId.irSensor.SPEED_MOTOR_RIGHT) {
+    sensorState.ir.rightRpm = readMotorRPM(irSpeedMotorRight);
     uart.send(uart.mapId.irSensor.SPEED_MOTOR_RIGHT, 4, (byte*)&sensorState.ir.rightRpm);
   } else if (cmd == uart.mapId.irSensor.SPEED_MOTOR_LEFT) {
+    sensorState.ir.leftRpm = readMotorRPM(irSpeedMotorLeft);
     uart.send(uart.mapId.irSensor.SPEED_MOTOR_LEFT, 4, (byte*)&sensorState.ir.leftRpm);
 
   // Hall sensor
@@ -190,11 +211,11 @@ void uartCommand(byte cmd, byte id, byte *data, byte len) {
     ultraSonicThreshold = data[0];
 
   // LED
-  } else if (cmd == uart.mapId.led.laser) {
+  } else if (cmd == uart.mapId.led.LASER) {
     if (!emergencyState) digitalWrite(pins.led.laser, (data[0] == 1) ? HIGH : LOW);
-  } else if (cmd == uart.mapId.led.bumper.left) {
+  } else if (cmd == uart.mapId.led.bumper.LEFT) {
     if (!emergencyState) digitalWrite(pins.led.bumper.left, (data[0] == 1) ? HIGH : LOW);
-  } else if (cmd == uart.mapId.led.bumper.right) {
+  } else if (cmd == uart.mapId.led.bumper.RIGHT) {
     if (!emergencyState) digitalWrite(pins.led.bumper.right, (data[0] == 1) ? HIGH : LOW);
 
   // Motor
@@ -238,27 +259,6 @@ void loop() {
   uart.update();
   buzzer.update();
 
-  unsigned long currentMillis = millis();
-  
-  bool currentRight = irSpeedMotorRight.isDetected();
-  if (currentRight && !lastRightState) rightPulseCount++;
-  lastRightState = currentRight;
-
-  bool currentLeft = irSpeedMotorLeft.isDetected();
-  if (currentLeft && !lastLeftState) leftPulseCount++;
-  lastLeftState = currentLeft;
-
-  // Hitung hasil RPM setiap 100ms
-  if (currentMillis - lastRpmTime >= 100) { 
-    float multiplier = 60000.0 / (currentMillis - lastRpmTime) / ENCODER_HOLES;
-    sensorState.ir.rightRpm = rightPulseCount * multiplier;
-    sensorState.ir.leftRpm = leftPulseCount * multiplier;
-    
-    rightPulseCount = 0;
-    leftPulseCount = 0;
-    lastRpmTime = currentMillis;
-  }
-  // --------------------------------------------------------
 
   // Sensors ==============================================
   // IR Catcher

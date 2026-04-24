@@ -29,7 +29,7 @@ struct MapId {
   cbyte PING               = 0x04;
   cbyte PONG               = 0x05;
   cbyte TIME               = 0x06;
-  cbyte emergencyMode      = 0x07;
+  cbyte EMERGENCY_MODE      = 0x07;
   cbyte SET_DEFAULT        = 0x08;
   cbyte VALUE              = 0x09;
 
@@ -105,10 +105,10 @@ struct MapId {
 
   struct LedDriver {
     struct bumper {
-      cbyte left           = 0x30;
-      cbyte right          = 0x31;
+      cbyte LEFT           = 0x30;
+      cbyte RIGHT          = 0x31;
     } bumper;
-    cbyte laser            = 0x32;
+    cbyte LASER            = 0x32;
   } led;
 
 } mapId;
@@ -131,7 +131,25 @@ struct MapId {
 
     _lastID = _packetID;
     _packetID++;
-    slog.println(F("UART sent"));
+    
+    // --- LOGGING DATA UART ---
+    slog.add(F("UART sent CMD: 0x"));
+    if (cmd < 0x10) slog.add(F("0")); // Tambahkan leading zero jika nilai hex di bawah 10 (contoh: 0x0A)
+    slog.add(String(cmd, HEX));
+    
+    slog.add(F(" | DATA: "));
+    if (len > 0 && data != NULL) {
+      for (byte i = 0; i < len; i++) {
+        slog.add(F("0x"));
+        if (data[i] < 0x10) slog.add(F("0"));
+        slog.add(String(data[i], HEX));
+        slog.add(F(" "));
+      }
+    } else {
+      slog.add(F("None"));
+    }
+    slog.println();
+    // -------------------------
   }
 
   void update() {

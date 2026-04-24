@@ -20,6 +20,14 @@
 #include <pgmspace.h>
 #include "irSensor.h"
 #include "buzzerMelody.h"
+#include "sequence.h"
+
+#define ON_STR "ON"
+#define OFF_STR "OFF"
+#define TRUE_INT 1
+#define FALSE_INT 0
+
+using byte = uint8_t;
 
 using cbyte = const byte;
 using cuint = const uint;
@@ -34,11 +42,6 @@ byte LEFT = 0;
 
 //FirebaseHandler firebase;
 EEPROMManager memory;
-MutexData<int> sendNumber(0);
-
-MutexData<String> mutexCommand;
-MutexData<String> mutexCmdTarget;
-MutexData<StringArray10> mutexCmdValue;
 MutexData<byte> mutexCmdValueCount(0);
 
 uint count = 0;
@@ -50,6 +53,8 @@ bool serialLogState = true;
 bool gamepadIsConnected = false;
 uint nanoPing = 0;
 bool isNanoConnected = false;
+MutexData<unsigned long> loopCountCore0(0);
+
 
 // Command parsing
 String target, command, value[16];
@@ -204,6 +209,7 @@ class RobotAction {
         byte pusherIdleAngle = 0;
 
         bool emergencyState = false;
+        bool isEmergencyFeatureEnabled = true;
         bool ledBumperState = false;
         byte flywheelSpeed = 0;
 
@@ -315,10 +321,11 @@ class RobotAction {
                 lastHallRight = sensorState.hall.right;
                 lastHallLeft = sensorState.hall.left;
                 
+                byte speed = 40;
                 if (magRotateDirection == LEFT) {
-                    uart.send(uart.mapId.servo.megazine.ROTATE_L, 1, (byte*)40);
+                    uart.send(uart.mapId.servo.megazine.ROTATE_L, 1, &speed);
                 } else {
-                    uart.send(uart.mapId.servo.megazine.ROTATE_R, 1, (byte*)40);
+                    uart.send(uart.mapId.servo.megazine.ROTATE_R, 1, &speed);
                 }
             }
         }
@@ -345,7 +352,7 @@ class RobotAction {
 
         void laser(bool state) {
             byte val = state ? 1 : 0;
-            uart.send(uart.mapId.led.laser, 1, &val);
+            uart.send(uart.mapId.led.LASER, 1, &val);
         }
 
         void barrel(bool moveUp, byte speed) {
@@ -356,19 +363,28 @@ class RobotAction {
             }
         }
 
-        void emergencyMode(bool state) {
-            byte val = state ? 1 : 0;
-            uart.send(uart.mapId.emergencyMode, 1, &val);
-        }
-
         void setDefault() {
             uart.send(uart.mapId.SET_DEFAULT, 0, NULL);
             servo180(pusherServo, 0);
         }
 
+        void setEmergencyFeature(bool enable) {
+            isEmergencyFeatureEnabled = enable;
+            if (!enable && emergencyState) {
+                emergencyState = false;
+                byte val = 0;
+                uart.send(uart.mapId.EMERGENCY_MODE, 1, &val);
+            }
+        }
+
         void toggleEmergency() {
+            if (!isEmergencyFeatureEnabled) {
+                slog.println(F("Emergency feature is disabled!"));
+                return;
+            }
             emergencyState = !emergencyState;
-            emergencyMode(emergencyState);
+            byte val = emergencyState ? 1 : 0;
+            uart.send(uart.mapId.EMERGENCY_MODE, 1, &val);
             if (emergencyState) {
                 // Hentikan semua proses beruntun dan pergerakan seketika
                 doTakeBall = false;
@@ -386,8 +402,8 @@ class RobotAction {
         void toggleLedBumper() {
             ledBumperState = !ledBumperState;
             byte val = ledBumperState ? 1 : 0;
-            uart.send(uart.mapId.led.bumper.left, 1, &val);
-            uart.send(uart.mapId.led.bumper.right, 1, &val);
+            uart.send(uart.mapId.led.bumper.LEFT, 1, &val);
+            uart.send(uart.mapId.led.bumper.RIGHT, 1, &val);
         }
 
         void changeFlywheelSpeed(bool increase) {
@@ -404,6 +420,14 @@ class RobotAction {
 
 } robotAction;
 
+// ==================== AUTO SEQUENCE CONFIG ====================
+int selectedSequenceIndex = -1; // -1 Berarti tidak ada sequence yang dipilih
+bool isSequenceRunning = false;
+byte currentSequenceStep = 0;
+unsigned long sequenceStepStartTime = 0;
+
+// ==============================================================
+
 // Fungsi cek boolean dari string
 //
 // str:
@@ -417,7 +441,7 @@ struct State {
         const char* c = s.c_str();
 
         if (strcasecmp(c, "1") == 0 || strcasecmp(c, "true") == 0 || 
-            strcasecmp(c, "on") == 0 || strcasecmp(c, "enable") == 0 || 
+            strcasecmp(c, ON_STR) == 0 || strcasecmp(c, "enable") == 0 || 
             strcasecmp(c, "yes") == 0) {
             return true;
         }
@@ -502,6 +526,29 @@ bool commandRun(const String &target, const String &command, const String value[
                 return false;
             }
             mecanum.drive(value[0].toInt(), value[1].toInt(), value[2].toInt(), value[3].toInt());
+        } else if (command == F("enableEmergency")) {
+            bool stateVal = state.str(value[0]);
+            robotAction.setEmergencyFeature(stateVal);
+            if (!memory.save(epmPtr.emergencyState, stateVal ? "1" : "0")) {
+                slog.println(logMes.eepromSaveFailed);
+            }
+            slog.add(F("Emergency Feature: "));
+            slog.add(stateVal ? ON_STR : OFF_STR);
+            slog.println();
+        } else if (command == F("emergency")) {
+            bool stateVal = state.str(value[0]);
+            if (robotAction.emergencyState != stateVal) {
+                robotAction.toggleEmergency();
+                slog.add(F("Emergency mode: "));
+                slog.add(stateVal ? ON_STR : OFF_STR);
+                slog.println();
+            }
+        } else if (command == F("isEmergency")) {
+            slog.add(F("Emergency mode: "));
+            slog.println(robotAction.emergencyState ? ON_STR : OFF_STR);
+        } else {
+            slog.println(logMes.invalidCommand);
+            return false;
         }
     }
 
@@ -548,14 +595,15 @@ bool commandRun(const String &target, const String &command, const String value[
         } else if (command == F("bzrMelody")) {
             byte melodyValue = (byte)value[0].toInt();
             uart.send(uart.mapId.buzzer.MELODY, 1, &melodyValue);
-        } else if (command == F("emergency")) {
-            bool stateVal = state.str(value[0]);
-            if (robotAction.emergencyState != stateVal) {
-                robotAction.toggleEmergency();
-                slog.add(F("Emergency mode: "));
-                slog.add(stateVal ? F("ON") : F("OFF"));
-                slog.println();
-            }
+        } else if (command == F("power")) {
+            slog.add(F("Battery: "));
+            slog.add(String(sensorState.power.battery));
+            slog.add(F("% | Voltage: "));
+            slog.add(String(sensorState.power.voltage, 2));
+            slog.add(F("V | Current: "));
+            slog.add(String(sensorState.power.current, 2));
+            slog.add(F("A"));
+            slog.println();
         } else {
             slog.println(logMes.invalidCommand);
             return false;
@@ -573,9 +621,9 @@ bool commandRun(const String &target, const String &command, const String value[
             ESP.restart();
         }
     } else if (target == F("gmp")) {
-        if (command == F("battery")) {
+        if (command == F("batt")) {
             slog.add(F("gamepad battery: "));
-            slog.add(gamepadState.battery_status);
+            slog.add(globalGamepadState.get().battery_status);
             slog.println();
         }
     } else {
@@ -622,6 +670,13 @@ void mainFunction(void *pvParameters) {
         serialLogState = memory.get(epmPtr.logState) == "1";
         slog.enable(serialLogState);
 
+        String emgFeatureState = memory.get(epmPtr.emergencyState);
+        if (emgFeatureState == "0") {
+            robotAction.setEmergencyFeature(false);
+        } else {
+            robotAction.setEmergencyFeature(true);
+        }
+
         uart.send(uart.mapId.buzzer.MELODY, 1, (byte*)&buzzerMel.STARTUP);
 
         robotAction.setDefault();
@@ -664,6 +719,7 @@ void mainFunction(void *pvParameters) {
         }
         lastEmergencyBtn = currentEmergencyBtn;
 
+        
         //Gamepad=========================================
         if (Ps3.isConnected()) {
             if (!gamepadIsConnected) {
@@ -688,18 +744,32 @@ void mainFunction(void *pvParameters) {
             //Gamepad action=============================
             if (isGamepadChanged(current_state, last_state)) {
 
-                if (abs(current_state.stick_lx - last_state.stick_lx) > 2 || 
-                    abs(current_state.stick_ly - last_state.stick_ly) > 2 || 
-                    abs(current_state.stick_rx - last_state.stick_rx) > 2 || 
-                    abs(current_state.stick_ry - last_state.stick_ry) > 2) {
-                    Serial.printf("Joy L [X: %d, Y: %d] | Joy R [X: %d, Y: %d]\n", 
-                    current_state.stick_lx, current_state.stick_ly, 
-                    current_state.stick_rx, current_state.stick_ry);
+                // Cek pembatalan sequence jika tombol/analog lain ditekan
+                bool otherInputActive = false;
+                if (abs(current_state.stick_lx - last_state.stick_lx) > gmpDeadZone) otherInputActive = true;
+                if (abs(current_state.stick_ly - last_state.stick_ly) > gmpDeadZone) otherInputActive = true;
+                if (abs(current_state.stick_rx - last_state.stick_rx) > gmpDeadZone) otherInputActive = true;
+                if (abs(current_state.stick_ry - last_state.stick_ry) > gmpDeadZone) otherInputActive = true;
+                if (current_state.cross && !last_state.cross) otherInputActive = true;
+                if (current_state.square && !last_state.square) otherInputActive = true;
+                if (current_state.triangle && !last_state.triangle) otherInputActive = true;
+                if (current_state.circle && !last_state.circle) otherInputActive = true;
+                if (current_state.up && !last_state.up) otherInputActive = true;
+                if (current_state.down && !last_state.down) otherInputActive = true;
+                if (current_state.left && !last_state.left) otherInputActive = true;
+                if (current_state.right && !last_state.right) otherInputActive = true;
+                if (current_state.l1 && !last_state.l1) otherInputActive = true;
+                if (current_state.r1 && !last_state.r1) otherInputActive = true;
+                if (current_state.ps && !last_state.ps) otherInputActive = true;
+
+                if (otherInputActive && selectedSequenceIndex != -1 && !isSequenceRunning) {
+                    slog.println(F("[GMP] Sequence selection CANCELLED"));
+                    selectedSequenceIndex = -1;
                 }
 
-                // Button 1: A (Silang/Cross) = Emergency mode
-                if (current_state.cross && !last_state.cross) {
-                    slog.println(F("[GMP] Cross: Toggle Emergency Mode"));
+                // PS Button = Toggle Emergency Mode (Dipindah dari Cross)
+                if (current_state.ps && !last_state.ps) {
+                    slog.println(F("[GMP] PS: Toggle Emergency Mode"));
                     robotAction.toggleEmergency();
                 }
 
@@ -716,29 +786,96 @@ void mainFunction(void *pvParameters) {
                         robotAction.barrel(true, 0); // Kirim speed 0 untuk stop
                     }
                     
-                    // Button 0: X (Kotak/Square) = Led bumper Right & Left
-                    if (current_state.square && !last_state.square) {
-                        slog.println(F("[GMP] Square: Toggle LED Bumper"));
-                        robotAction.toggleLedBumper();
+                    // Button 0: X (Cross) = Shoot
+                    if (current_state.cross && !last_state.cross) {
+                        slog.println(F("[GMP] Cross: Shoot"));
+                        robotAction.shoot();
                     }
 
-                    // Button 2: B (Lingkaran/Circle) = Buzzer
-                    if (current_state.circle && !last_state.circle) {
-                        slog.println(F("[GMP] Circle: Buzzer ON"));
+                    // Button 1: A (Square) = Buzzer (Klakson)
+                    if (current_state.square && !last_state.square) {
+                        slog.println(F("[GMP] Square: Buzzer ON"));
                         byte bzData[2] = { 200, 200 }; // Frekuensi & durasi dari klakson (Buzzer)
                         uart.send(uart.mapId.buzzer.TONE, 2, bzData);
                     }
 
-                    // Button 3: Y (Segitiga/Triangle) = Reload Magazine
-                    if (current_state.triangle && !last_state.triangle) {
-                        slog.println(F("[GMP] Triangle: Reload Magazine"));
+                    // Button 2: B (Circle) = Reload Megazine
+                    if (current_state.circle && !last_state.circle) {
+                        slog.println(F("[GMP] Circle: Reload Magazine"));
                         robotAction.rotateMegazine(LEFT, RobotAction::ALIGN_DROP_POINT, 1);
                     }
 
-                    // Right Trigger (R2) = Shoot
-                    if (current_state.analog_r2 > 100 && last_state.analog_r2 <= 100) {
-                        slog.println(F("[GMP] R2: Shoot"));
-                        robotAction.shoot();
+                    // Button 3: Y (Triangle) = Predicted shoot
+                    if (current_state.triangle && !last_state.triangle) {
+                        slog.println(F("[GMP] Triangle: Predicted Shoot"));
+                        unsigned long dist = sensorState.ultrasonic;
+                        if (dist > 0 && dist < 500) { // Safety check jarak
+                            // Hitung kecepatan motor (50-255) berdasarkan jarak (10-300cm)
+                            byte calcSpeed = map(constrain(dist, 10, 300), 10, 300, 50, 255);
+                            slog.add(F("Calculated Flywheel Speed: ")); slog.println(String(calcSpeed));
+                            robotAction.setFlywheelSpeed(true, calcSpeed);
+                            robotAction.setFlywheelSpeed(false, calcSpeed);
+                            robotAction.shoot();
+                        } else {
+                            slog.println(F("Target out of range or sensor error!"));
+                        }
+                    }
+
+                    // Button 4: Left Bumper (L1) = Laser (ON/OFF)
+                    static bool laserState = false;
+                    if (current_state.l1 && !last_state.l1) {
+                        laserState = !laserState;
+                        slog.println(F("[GMP] L1: Toggle Laser"));
+                        robotAction.laser(laserState);
+                    }
+
+                    // Button 5: Right Bumper (R1) = Led bumper Right & Left
+                    if (current_state.r1 && !last_state.r1) {
+                        slog.println(F("[GMP] R1: Toggle LED Bumper"));
+                        robotAction.toggleLedBumper();
+                    }
+
+                    // Button 8: Select = select sequence
+                    if (current_state.select && !last_state.select) {
+                        if (!isSequenceRunning) {
+                            selectedSequenceIndex++;
+                            if (selectedSequenceIndex >= totalSequences) {
+                                selectedSequenceIndex = 0; // Kembali ke sequence 1 jika terlewat
+                            }
+                            slog.add(F("[GMP] Select: Sequence "));
+                            slog.add(String(selectedSequenceIndex + 1));
+                            slog.println(F(" Selected (Ready to run)"));
+                            
+                            // Bunyikan buzzer sebentar (frekuensi 150, durasi 50ms)
+                            byte bzData[2] = { 150, 50 }; 
+                            uart.send(uart.mapId.buzzer.TONE, 2, bzData);
+                        }
+                    }
+
+                    // Button 9: Start = start selected sequence
+                    if (current_state.start && !last_state.start) {
+                        if (isSequenceRunning) {
+                            isSequenceRunning = false;
+                            selectedSequenceIndex = -1; // Batalkan pilihan agar bisa pilih baru nanti
+                            slog.println(F("[GMP] Start: Auto Sequence STOPPED"));
+                            mecanum.stop();
+                        } else {
+                            if (selectedSequenceIndex != -1) {
+                                isSequenceRunning = true;
+                                slog.add(F("[GMP] Start: Auto Sequence "));
+                                slog.add(String(selectedSequenceIndex + 1));
+                                slog.println(F(" STARTED"));
+                                
+                                currentSequenceStep = 0;
+                                sequenceStepStartTime = millis();
+                                
+                                String t, c, v[16]; int vCount = 0;
+                                parseCmd(String(availableSequences[selectedSequenceIndex].steps[0].command), t, c, v, 16, vCount);
+                                commandRun(t, c, v, vCount);
+                            } else {
+                                slog.println(F("[GMP] Start: No sequence selected! Press SELECT first."));
+                            }
+                        }
                     }
 
                     // D-Pad X (Kiri/Kanan) = Rotate Magazine
@@ -761,8 +898,53 @@ void mainFunction(void *pvParameters) {
                         robotAction.changeFlywheelSpeed(false);
                     }
 
+                    // Joystick L info
+                    static int last_joy_lx = 0, last_joy_ly = 0;
+                    if (current_state.stick_lx != last_joy_lx || current_state.stick_ly != last_joy_ly) {
+                        slog.add(F("[JOY L] X: "));
+                        slog.add(String(current_state.stick_lx));
+                        slog.add(F(" | Y: "));
+                        slog.add(String(current_state.stick_ly));
+                        slog.println();
+
+                        last_joy_lx = current_state.stick_lx;
+                        last_joy_ly = current_state.stick_ly;
+                    }
+
+                    // Joystick R info
+                    static int last_joy_rx = 0, last_joy_ry = 0;
+                    if (current_state.stick_rx != last_joy_rx || current_state.stick_ry != last_joy_ry) {
+                        slog.add(F("[JOY R] X: "));
+                        slog.add(String(current_state.stick_rx));
+                        slog.add(F(" | Y: "));
+                        slog.add(String(current_state.stick_ry));
+                        slog.println();
+
+                        last_joy_rx = current_state.stick_rx;
+                        last_joy_ry = current_state.stick_ry;
+                    }
+
                     // Mecanum wheel control
-                    mecanum.drive(current_state.stick_rx, -current_state.stick_ry, current_state.stick_lx);
+                    int mec_x = current_state.stick_rx;
+                    int mec_y = -current_state.stick_ry;
+                    int mec_turn = current_state.stick_lx;
+
+                    static int last_mec_x = 0, last_mec_y = 0, last_mec_turn = 0;
+                    if (mec_x != last_mec_x || mec_y != last_mec_y || mec_turn != last_mec_turn) {
+                        slog.add(F("[MECANUM] X: "));
+                        slog.add(String(mec_x));
+                        slog.add(F(" | Y: "));
+                        slog.add(String(mec_y));
+                        slog.add(F(" | Turn: "));
+                        slog.add(String(mec_turn));
+                        slog.println();
+
+                        last_mec_x = mec_x;
+                        last_mec_y = mec_y;
+                        last_mec_turn = mec_turn;
+                    }
+
+                    mecanum.drive(mec_x, mec_y, mec_turn);
                 } else {
                     // Pastikan mecanum benar-benar tidak bergerak
                     mecanum.stop();
@@ -811,8 +993,14 @@ void mainFunction(void *pvParameters) {
             
             parseCmd(serialInput, target, command, value, cmdMaxValue, cmdValueCount);
 
-            slog.println("Received serial input: " + serialInput);
-            slog.println("Hasil Parsing -> target: " + target + " | command: " + command + " | value: " + value[0]);
+            slog.add(F("Received serial input: "));
+            slog.println(serialInput);
+            slog.add(F("Hasil Parsing -> target: "));
+            slog.add(target);
+            slog.add(F(" | command: "));
+            slog.add(command);
+            slog.add(F(" | value: "));
+            slog.println(value[0]);
             
             if (target == "") {
                 slog.println(logMes.invalidCommandTarget);
@@ -820,40 +1008,48 @@ void mainFunction(void *pvParameters) {
                 slog.println(logMes.invalidCommand);
             } else {
                 cmdValueCount = sizeof(value) / sizeof(value[0]);
-
-                mutexCommand.set(command);
-                mutexCmdTarget.set(target);
-                mutexCmdValueCount.set(cmdMaxValue);
-                StringArray10 tempValue;
-                for (int i = 0; i < 10; i++) {
-                    tempValue.data[i] = value[i];
-                }
-                mutexCmdValue.set(tempValue);
                 commandRun(target, command, value, cmdValueCount);
             }
         }
         //Serial communication end================================
 
+        //Auto sequence runner====================================
+        if (isSequenceRunning && !robotAction.emergencyState && selectedSequenceIndex != -1) {
+            const SequenceDef& currentSeq = availableSequences[selectedSequenceIndex];
+            if (millis() - sequenceStepStartTime >= currentSeq.steps[currentSequenceStep].duration) {
+                currentSequenceStep++;
+                if (currentSequenceStep >= currentSeq.length) {
+                    isSequenceRunning = false;
+                    selectedSequenceIndex = -1; // Reset pilihan ke default jika telah selesai dieksekusi
+                    slog.println(F("[AUTO] Sequence FINISHED"));
+                    mecanum.stop();
+                } else {
+                    sequenceStepStartTime = millis();
+                    // Local temporary var (membebaskan global scope memory cache)
+                    String t, c, v[16]; int vCount = 0;
+                    parseCmd(String(currentSeq.steps[currentSequenceStep].command), t, c, v, 16, vCount);
+                    commandRun(t, c, v, vCount);
+                }
+            }
+        }
+        //Auto sequence runner end================================
+        
         static unsigned long lastTime = 0;
-        static unsigned long loopCount = 0;
+        static unsigned long loopCountCore1 = 0;
 
-        loopCount++;
+        loopCountCore1++;
 
         if (millis() - lastTime >= 1000) {
-            slog.add("Loop rate core1: ");
-            slog.add(String(loopCount));
-            slog.add(" Hz");
+            slog.add(F("Loop rate -> Core 0: "));
+            slog.add(String(loopCountCore0.get()));
+            slog.add(F(" Hz | Core 1: "));
+            slog.add(String(loopCountCore1));
+            slog.add(F(" Hz"));
             slog.println();
 
-            loopCount = 0;
+            loopCountCore0.set(0);
+            loopCountCore1 = 0;
             lastTime = millis();
-        }
-        
-
-        static unsigned long coreLastMillis = 0;
-        if (millis() - coreLastMillis >= 2000) {
-            slog.println("core 1 is alive");
-            coreLastMillis = millis();
         }
 
         vTaskDelay(5 / portTICK_PERIOD_MS);
@@ -862,9 +1058,67 @@ void mainFunction(void *pvParameters) {
 }
 
 void runtime(void *pvParameters) {
+    esp_task_wdt_add(NULL);
+
+    unsigned long lastDiagnosticTime = 0;
+
+    // Inisialisasi pin untuk sensor tegangan dan arus
+    // Pastikan di pins.h Anda mengubah pin 0 menjadi pin ADC ESP32 yang valid (misal: 34, 35, 36, 39)
+    pinMode(pins.powerMonitor.voltageSensor, INPUT);
+    pinMode(pins.powerMonitor.currentSensor, INPUT);
+
     while (1) {
+        esp_task_wdt_reset();
         
-        vTaskDelay(5 / portTICK_PERIOD_MS);
+        // Power Monitor (Tegangan, Arus, dan Baterai)
+        int rawV = analogRead(pins.powerMonitor.voltageSensor);
+        int rawI = analogRead(pins.powerMonitor.currentSensor);
+        
+        // Konversi pembacaan raw ADC (0-4095) ke Tegangan Pin (0-3.3V)
+        float vPin = (rawV / 4095.0) * 3.3;
+        float iPin = (rawI / 4095.0) * 3.3;
+
+        // Konstanta Kalibrasi (Ubah sesuai dengan komponen hardware sensor yang Anda pakai)
+        const float VOLTAGE_MULTIPLIER = 5.0;    // Rasio Voltage Divider
+        const float CURRENT_SENSITIVITY = 0.185; // Sensitivitas modul ACS712-5A (185mV/A)
+        const float CURRENT_ZERO_POINT = 1.65;   // Nilai tegangan tengah saat 0 Ampere (VCC/2)
+
+        sensorState.power.voltage = vPin * VOLTAGE_MULTIPLIER;
+        sensorState.power.current = (iPin - CURRENT_ZERO_POINT) / CURRENT_SENSITIVITY;
+        if (sensorState.power.current < 0.05) sensorState.power.current = 0.0; // Filter out noise sensor arus
+
+        // Persentase Baterai (Diasumsikan menggunakan 3S LiPo: Min 9.0V, Max 12.6V)
+        const float BATTERY_MIN = 9.0;
+        const float BATTERY_MAX = 12.6;
+        float percent = ((sensorState.power.voltage - BATTERY_MIN) / (BATTERY_MAX - BATTERY_MIN)) * 100.0;
+        sensorState.power.battery = constrain((int)percent, 0, 100);
+        // --------------------------------------------------
+
+        if (millis() - lastDiagnosticTime >= 10000) {
+            lastDiagnosticTime = millis();
+
+            uint32_t freeHeap = ESP.getFreeHeap();
+            UBaseType_t stackWaterMark = uxTaskGetStackHighWaterMark(NULL);
+
+            slog.add(F("[RUNTIME] Free Heap: "));
+            slog.add(String(freeHeap));
+            slog.add(F(" | Stack Watermark: "));
+            slog.add(String(stackWaterMark));
+            slog.println();
+
+            if (freeHeap < 10000) {
+                slog.println(F("[CRITICAL] Low Memory! System Restarting..."));
+                delay(1000);
+                ESP.restart();
+            }
+
+            if (!isNanoConnected && !robotAction.emergencyState) {
+                slog.println(F("[CRITICAL] Nano Offline! Forcing Emergency Mode..."));
+                robotAction.toggleEmergency();
+            }
+        }
+
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
         yield();
     }
 }
@@ -890,41 +1144,16 @@ void wlConnection(void *pvParameters) {
     if (!wlConnectionFunctionHasRunOnce) {
         initGamepad(secretData.PS3_MAC_ADDRESS);
         
-        // if (wifi.connect()) {
-            
-        // }
-    //     firebase.begin(
-    //         secretData.Web_API_KEY,
-    //         secretData.DATABASE_URL,
-    //         secretData.USER_EMAIL,
-    //         secretData.USER_PASS
-    //     );
         wlConnectionFunctionHasRunOnce = true;
     }
 
     while (1) {
 
-        // Backup state background ke Mutex Data secara kontinyu dari PS3 (Core 0)
         if (Ps3.isConnected()) {
             globalGamepadState.set(gamepadState);
         }
 
-        if (millis() - lastMillis >= 400) {
-            lastMillis = millis();
-            // firebase.sendInt("/test/sensor", number.get());
-            // esp_task_wdt_reset();
-            // parseCmd(firebase.getString("/test/command"), target, command, value, cmdMaxValue, cmdValueCount);
-            // esp_task_wdt_reset();
-            // if (command != ""){ slog.println(command); }
-            //count ++;
-        }
-
-        static unsigned long coreLastMillis = 0;
-        if (millis() - coreLastMillis >= 2000) {
-            slog.println("core 0 is alive");
-            coreLastMillis = millis();
-        }
-
+        loopCountCore0.set(loopCountCore0.get() + 1);
 
         vTaskDelay(15 / portTICK_PERIOD_MS);
         yield();
@@ -951,7 +1180,7 @@ void setup(){
         "main task",
         8192,
         NULL,
-        1,
+        2,      // Prioritas dinaikkan menjadi 2 (Lebih tinggi dari task background)
         NULL,
         1
     );
@@ -963,7 +1192,7 @@ void setup(){
         NULL,
         1,
         NULL,
-        1
+        0       // Dipindah ke Core 0 agar tidak mengganggu kecepatan kalkulasi mecanum di Core 1
     );
 }
 
