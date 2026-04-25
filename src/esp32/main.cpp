@@ -338,8 +338,12 @@ class RobotAction {
             } 
         }
 
-        void setFlywheelSpeed(bool rightSide, byte speed) {
-            if (rightSide) {
+        /**
+         * @param isRightSide Right or Left
+         * @param speed speed of motor
+         */
+        void setFlywheelSpeed(bool isRightSide, byte speed) {
+            if (isRightSide) {
                 uart.send(uart.mapId.motor.right.SPEED, 1, &speed);
             } else {
                 uart.send(uart.mapId.motor.left.SPEED, 1, &speed);
@@ -399,12 +403,16 @@ class RobotAction {
             }
         }
 
-        void toggleLedBumper() {
-            ledBumperState = !ledBumperState;
+        void ledBumper(const bool isRightSide, const bool state) {
+            ledBumperState = state;
             byte val = ledBumperState ? 1 : 0;
-            uart.send(uart.mapId.led.bumper.LEFT, 1, &val);
-            uart.send(uart.mapId.led.bumper.RIGHT, 1, &val);
+            if (isRightSide) {
+                uart.send(uart.mapId.led.bumper.RIGHT, 1, &val);
+            } else {
+                uart.send(uart.mapId.led.bumper.LEFT, 1, &val);
+            }
         }
+        
 
         void changeFlywheelSpeed(bool increase) {
             if (increase) {
@@ -546,6 +554,44 @@ bool commandRun(const String &target, const String &command, const String value[
         } else if (command == F("isEmergency")) {
             slog.add(F("Emergency mode: "));
             slog.println(robotAction.emergencyState ? ON_STR : OFF_STR);
+        } else if (command == F("takeBall")) {
+            robotAction.takeBall();
+        } else if (command == F("shoot")) {
+            robotAction.shoot();
+        } else if (command == F("rotateMag")) {
+            if (!checkValue(valueCount, 3)) return false;
+            bool isRight = state.str(value[0]); // 0 (false) = LEFT, 1 (true) = RIGHT
+            RobotAction::MagAlignTarget targetAlign = (value[1].toInt() == 1) ? RobotAction::ALIGN_DROP_POINT : RobotAction::ALIGN_SHOOT;
+            byte count = (byte)value[2].toInt();
+            robotAction.rotateMegazine(isRight, targetAlign, count);
+        } else if (command == F("flywheel")) {
+            if (!checkValue(valueCount, 2)) return false;
+            bool rightSide = state.str(value[0]);
+            byte speed = (byte)value[1].toInt();
+            robotAction.setFlywheelSpeed(rightSide, speed);
+        } else if (command == F("fan")) {
+            if (!checkValue(valueCount, 1)) return false;
+            byte speed = (byte)value[0].toInt();
+            robotAction.setFanSpeed(speed);
+        } else if (command == F("laser")) {
+            if (!checkValue(valueCount, 1)) return false;
+            bool st = state.str(value[0]);
+            robotAction.laser(st);
+        } else if (command == F("barrel")) {
+            if (!checkValue(valueCount, 2)) return false;
+            bool moveUp = state.str(value[0]);
+            byte speed = (byte)value[1].toInt();
+            robotAction.barrel(moveUp, speed);
+        } else if (command == F("setDefault")) {
+            robotAction.setDefault();
+        } else if (command == F("ledBumperR")) {
+            robotAction.ledBumper(true, state.str(value[0]));
+        } else if (command == F("ledBumperL")) {
+            robotAction.ledBumper(false, state.str(value[0]));
+        } else if (command == F("chgFlywheel")) {
+            if (!checkValue(valueCount, 1)) return false;
+            bool increase = state.str(value[0]);
+            robotAction.changeFlywheelSpeed(increase);
         } else {
             slog.println(logMes.invalidCommand);
             return false;
@@ -832,6 +878,7 @@ void mainFunction(void *pvParameters) {
                     // Button 5: Right Bumper (R1) = Led bumper Right & Left
                     if (current_state.r1 && !last_state.r1) {
                         slog.println(F("[GMP] R1: Toggle LED Bumper"));
+                        // todo solve
                         robotAction.toggleLedBumper();
                     }
 

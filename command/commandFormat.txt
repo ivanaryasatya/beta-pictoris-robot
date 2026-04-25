@@ -1,0 +1,217 @@
+==================================================
+DAFTAR PERINTAH SERIAL MONITOR (ESP32)
+==================================================
+
+Format Umum:
+<target>.<command>.<value1>.<value2>...
+
+Contoh:
+>rbt.move.100.0.0.255
+>esp32.enableLog.on
+>nano.ping
+
+--------------------------------------------------
+TARGET: rbt (Robot Actions)
+--------------------------------------------------
+
+1.  Perintah: `rbt.restart`
+    Deskripsi: Melakukan restart pada ESP32 dan mengirim perintah restart ke Nano.
+    Parameter: Tidak ada.
+    Contoh: `rbt.restart`
+
+2.  Perintah: `rbt.move`
+    Deskripsi: Mengontrol pergerakan robot Mecanum.
+    Parameter: 4 nilai integer.
+        - `value[0]` (int): Kecepatan sumbu X (kiri/kanan).
+        - `value[1]` (int): Kecepatan sumbu Y (maju/mundur).
+        - `value[2]` (int): Kecepatan rotasi (putar).
+        - `value[3]` (int): Pengali kecepatan keseluruhan.
+    Contoh: `rbt.move.100.0.0.255` (Bergerak ke kanan dengan kecepatan penuh)
+    CATATAN PENTING: Terdapat bug logika pada validasi parameter di kode saat ini.
+                     Perintah ini hanya akan dieksekusi jika jumlah parameter kurang dari 4,
+                     dan akan gagal jika 4 parameter atau lebih diberikan.
+                     Seharusnya membutuhkan minimal 4 parameter.
+
+3.  Perintah: `rbt.enableEmergency`
+    Deskripsi: Mengaktifkan atau menonaktifkan fitur mode darurat. Status disimpan ke EEPROM.
+    Parameter: 1 nilai boolean.
+        - `value[0]` (boolean): `0` atau `false` (nonaktif), `1` atau `true` (aktif).
+    Contoh: `rbt.enableEmergency.1` (Mengaktifkan fitur darurat)
+
+4.  Perintah: `rbt.emergency`
+    Deskripsi: Mengaktifkan atau menonaktifkan mode darurat. Jika fitur darurat dinonaktifkan, perintah ini akan diabaikan.
+    Parameter: 1 nilai boolean.
+        - `value[0]` (boolean): `0` atau `false` (nonaktif), `1` atau `true` (aktif).
+    Contoh: `rbt.emergency.1` (Mengaktifkan mode darurat)
+
+5.  Perintah: `rbt.isEmergency`
+    Deskripsi: Menampilkan status mode darurat saat ini.
+    Parameter: Tidak ada.
+    Contoh: `rbt.isEmergency`
+
+6.  Perintah: `rbt.takeBall`
+    Deskripsi: Memulai urutan pengambilan bola.
+    Parameter: Tidak ada.
+    Contoh: `rbt.takeBall`
+
+7.  Perintah: `rbt.shoot`
+    Deskripsi: Memulai urutan penembakan.
+    Parameter: Tidak ada.
+    Contoh: `rbt.shoot`
+
+8.  Perintah: `rbt.rotateMag`
+    Deskripsi: Memutar magazine.
+    Parameter: 3 nilai.
+        - `value[0]` (boolean): Arah putaran. `0` atau `false` (KIRI), `1` atau `true` (KANAN).
+        - `value[1]` (int): Target posisi alignment. `0` untuk `ALIGN_SHOOT`, `1` untuk `ALIGN_DROP_POINT`.
+        - `value[2]` (byte): Jumlah putaran yang diinginkan.
+    Contoh: `rbt.rotateMag.0.0.1` (Putar magazine ke kiri 1 kali ke posisi tembak)
+
+9.  Perintah: `rbt.flywheel`
+    Deskripsi: Mengatur kecepatan motor flywheel (kanan atau kiri).
+    Parameter: 2 nilai.
+        - `value[0]` (boolean): Sisi motor. `0` atau `false` (KIRI), `1` atau `true` (KANAN).
+        - `value[1]` (byte): Kecepatan motor (0-255).
+    Contoh: `rbt.flywheel.1.200` (Mengatur kecepatan flywheel kanan ke 200)
+
+10. Perintah: `rbt.fan`
+    Deskripsi: Mengatur kecepatan motor kipas.
+    Parameter: 1 nilai.
+        - `value[0]` (byte): Kecepatan motor (0-255).
+    Contoh: `rbt.fan.150` (Mengatur kecepatan kipas ke 150)
+
+11. Perintah: `rbt.laser`
+    Deskripsi: Mengaktifkan atau menonaktifkan laser.
+    Parameter: 1 nilai boolean.
+        - `value[0]` (boolean): `0` atau `false` (mati), `1` atau `true` (nyala).
+    Contoh: `rbt.laser.1` (Menyalakan laser)
+
+12. Perintah: `rbt.barrel`
+    Deskripsi: Menggerakkan barrel ke atas atau ke bawah.
+    Parameter: 2 nilai.
+        - `value[0]` (boolean): Arah gerakan. `0` atau `false` (TURUN), `1` atau `true` (NAIK).
+        - `value[1]` (byte): Kecepatan gerakan (0-255).
+    Contoh: `rbt.barrel.1.100` (Menggerakkan barrel ke atas dengan kecepatan 100)
+
+13. Perintah: `rbt.setDefault`
+    Deskripsi: Mengatur semua komponen robot ke posisi/status default.
+    Parameter: Tidak ada.
+    Contoh: `rbt.setDefault`
+
+14. Perintah: `rbt.ledBumperR`
+    Deskripsi: Mengaktifkan atau menonaktifkan LED bumper kanan.
+    Parameter: 1 nilai boolean.
+        - `value[0]` (boolean): `0` atau `false` (mati), `1` atau `true` (nyala).
+    Contoh: `rbt.ledBumperR.1` (Menyalakan LED bumper kanan)
+
+15. Perintah: `rbt.ledBumperL`
+    Deskripsi: Mengaktifkan atau menonaktifkan LED bumper kiri.
+    Parameter: 1 nilai boolean.
+        - `value[0]` (boolean): `0` atau `false` (mati), `1` atau `true` (nyala).
+    Contoh: `rbt.ledBumperL.0` (Mematikan LED bumper kiri)
+
+16. Perintah: `rbt.chgFlywheel`
+    Deskripsi: Meningkatkan atau menurunkan kecepatan flywheel sebesar 25 unit.
+    Parameter: 1 nilai boolean.
+        - `value[0]` (boolean): `0` atau `false` (turun), `1` atau `true` (naik).
+    Contoh: `rbt.chgFlywheel.1` (Meningkatkan kecepatan flywheel)
+
+--------------------------------------------------
+TARGET: esp32 (ESP32 System Commands)
+--------------------------------------------------
+
+1.  Perintah: `esp32.ping`
+    Deskripsi: Mengirim perintah PING ke Nano melalui UART.
+    Parameter: Tidak ada.
+    Contoh: `esp32.ping`
+
+2.  Perintah: `esp32.memSave`
+    Deskripsi: Menyimpan pasangan key-value ke EEPROM.
+    Parameter: 2 nilai.
+        - `value[0]` (char): Karakter tunggal sebagai key.
+        - `value[1]` (String): Data yang akan disimpan.
+    Contoh: `esp32.memSave.Q.MyWiFi` (Menyimpan "MyWiFi" dengan key 'Q')
+
+3.  Perintah: `esp32.memGetAll`
+    Deskripsi: Menampilkan semua pasangan key-value yang tersimpan di EEPROM.
+    Parameter: Tidak ada.
+    Contoh: `esp32.memGetAll`
+
+4.  Perintah: `esp32.freeHeap`
+    Deskripsi: Menampilkan jumlah memori heap bebas saat ini.
+    Parameter: Tidak ada.
+    Contoh: `esp32.freeHeap`
+
+5.  Perintah: `esp32.minFreeHeap`
+    Deskripsi: Menampilkan jumlah memori heap bebas minimum yang pernah tercatat.
+    Parameter: Tidak ada.
+    Contoh: `esp32.minFreeHeap`
+
+6.  Perintah: `esp32.enableLog`
+    Deskripsi: Mengaktifkan atau menonaktifkan logging serial dan menyimpan statusnya ke EEPROM.
+    Parameter: 1 nilai boolean.
+        - `value[0]` (boolean): `0` atau `false` (nonaktif), `1` atau `true` (aktif).
+    Contoh: `esp32.enableLog.1` (Mengaktifkan logging serial)
+
+7.  Perintah: `esp32.restart`
+    Deskripsi: Melakukan restart pada ESP32.
+    Parameter: Tidak ada.
+    Contoh: `esp32.restart`
+
+8.  Perintah: `esp32.maxAllocHeap`
+    Deskripsi: Menampilkan jumlah memori heap maksimum yang pernah dialokasikan.
+    Parameter: Tidak ada.
+    Contoh: `esp32.maxAllocHeap`
+
+9.  Perintah: `esp32.sleep`
+    Deskripsi: Memasukkan ESP32 ke mode sleep (light atau deep).
+    Parameter: 2 nilai.
+        - `value[0]` (String): Mode sleep. `light` atau `deep`.
+        - `value[1]` (int): Durasi sleep dalam detik.
+    Contoh: `esp32.sleep.light.10` (Light sleep selama 10 detik)
+
+10. Perintah: `esp32.bzrTone`
+    Deskripsi: Memainkan nada pada buzzer.
+    Parameter: 1 nilai integer.
+        - `value[0]` (unsigned int): Frekuensi/nilai nada buzzer.
+    Contoh: `esp32.bzrTone.500` (Memainkan nada 500Hz)
+
+11. Perintah: `esp32.bzrMelody`
+    Deskripsi: Memainkan melodi yang sudah ditentukan pada buzzer.
+    Parameter: 1 nilai integer.
+        - `value[0]` (byte): ID melodi.
+    Contoh: `esp32.bzrMelody.1` (Memainkan melodi ID 1)
+
+12. Perintah: `esp32.power`
+    Deskripsi: Menampilkan persentase baterai, tegangan, dan arus saat ini.
+    Parameter: Tidak ada.
+    Contoh: `esp32.power`
+
+--------------------------------------------------
+TARGET: nano (Nano Communication Commands)
+--------------------------------------------------
+
+1.  Perintah: `nano.sendCommand`
+    Deskripsi: Mengirim string perintah kustom ke Nano melalui UART.
+    Parameter: 1 nilai string.
+        - `value[0]` (String): String perintah yang akan dikirim.
+    Contoh: `nano.sendCommand.custom_cmd_here`
+
+2.  Perintah: `nano.ping`
+    Deskripsi: Menampilkan waktu ping terakhir ke Nano.
+    Parameter: Tidak ada.
+    Contoh: `nano.ping`
+
+3.  Perintah: `nano.restart`
+    Deskripsi: Melakukan restart pada ESP32 (bukan Nano).
+    Parameter: Tidak ada.
+    Contoh: `nano.restart`
+
+--------------------------------------------------
+TARGET: gmp (Gamepad Commands)
+--------------------------------------------------
+
+1.  Perintah: `gmp.batt`
+    Deskripsi: Menampilkan status baterai gamepad.
+    Parameter: Tidak ada.
+    Contoh: `gmp.batt`
